@@ -1,5 +1,9 @@
 ---
 title: "Shifting paradigms in Ocean Color: Bayesian Inference for Uncertainty-Aware Chlorophyll Estimation "
+format:
+    agu-pdf:
+        keep-tex: true
+    agu-html: default
 author:  
   - name: Erdem M. Karaköylü
     orcid: 0000-0002-6156-1720
@@ -13,7 +17,7 @@ author:
       - Consultant
   - name: Susanne E. Craig
     orcid: 0000-0002-8963-0951
-    corresponding: true
+    corresponding: false
     email: susanne.e.craig@nasa.gov
     roles:
       - Investigation
@@ -21,8 +25,17 @@ author:
     affiliations:
       - NASA
 abstract: Placeholder
-date: last-modified
+plain-language-summary: Placeholder
+keywords: []
+key-points:
+  - Key Points convey the main points and conclusions of the article. 
+  - Up to three key point statements are allowed, and each is limited to at most 140 characters with no abbreviations.
+  - Key Points are not included in the word count.
 bibliography: references.bib
+citation:
+  container-title: Geophysical Research Letters
+keep-tex: true
+date: last-modified
 ---
 
 ### Introduction
@@ -33,7 +46,12 @@ Satellite ocean color observations have long been fundamental for monitoring mar
 Subsequent refinements were introduced to address these deficiencies. For example, Hu et al. [@hu2012novel] proposed a Color Index (CI) formulation that employs a band‑difference approach to reduce sensitivity to residual atmospheric errors and instrument noise, with further improvements enhancing inter‑sensor agreement [@hu2019improving]. The increasing availability of calibration data (e.g., [@Valente2015]) and ongoing algorithmic improvements have led to the development of additional variants of the $OCx$ algorithms—specifically, the OC5 and OC6 formulations. O’Reilly and Werdell [@oreilly2019] maintain that OC5 extends the spectral basis by incorporating the 412 nm band, thereby exploiting its strong signal in clear, oligotrophic waters, while OC6 replaces the traditional denominator with the mean of the 555 and 670 nm reflectances, improving the dynamic range at low chlorophyll concentrations. In total, [@oreilly2019] propose 65 versions of BR/MBR $OCx$ type algorithms for 25 sensors—on average, two or more variants per sensor. With this arsenal, it is hoped, researchers are better equipped to address the wide array of bio‑optical environments encountered in global ocean color applications.
 
 #### Limitations of Existing Approaches
-Unfortunately, the development process for traditional ocean color algorithms is founded on a statistical fallacy. Frequentism—the classical approach—assumes that observations are random samples drawn from the studied phenomena. These samples' probabilities are  considered the observed frequencies that capture the the true - albeit noised up and potentially biased - behavior of the system. Under this framework, if a phenomenon is hypothesized to be represented by a model $M$ and data $$D$ is collected, then the model’s representativeness is evaluated solely through the likelihood $p(D∣M)$, which measures the probability of observing the data given that $$M$ is true. The fallacy arises from the mistaken belief that, with sufficiently large amounts of data, one can simply "flip" the likelihood to obtain $p(M∣D)$, thereby yielding a probabilistic statement about $M$. Compounding this error is the imposition of numerous unverified assumptions—disguised as objectivity—that lead frequentists to set the parameters of $M$ by maximizing $p(D∣M)$, under the false premise that this provides the best possible representation of the model. In essence, this fallacy leads to a confusion between the sampling probability $p(D∣M)$ and the inferential probability $p(M∣D)$; the latter  when correctly obtained  quantifies the plausibility of the hypothesis represented by $M$ - precisely what we seek. The historical dimensions of this frequentist illusion are fascinating in their own right, and we invite interested readers to consult works such as McGrayne [@mcgrayne] and Clayton [@clayton].
+Regrettably, the development process for traditional ocean color algorithms is founded on a statistical erroneous argument. The fallacy is the error of conflating empirical frequency — derived from a limited, noisy set of observations — with the long-run probability that would be obtained under an infinite number of trials,Frequentism—the classical approach—assumes that observations are random samples drawn from the studied phenomena. These samples' probabilities are considered the observed frequencies that capture the true - albeit noised up and potentially biased - behavior of the system. Under this framework, if a phenomenon is hypothesized to be represented by a model $M$ and data $D$ is collected, then the model’s representativeness is evaluated solely through the likelihood $p(D∣M)$, which measures the probability of observing the data given that $M$ is true. The fallacy arises from the mistaken belief that, with sufficiently large amounts of data, one can simply "flip" the likelihood to obtain $p(M∣D)$, thereby yielding a probabilistic statement about $M$. Compounding this error is the imposition of numerous unverified assumptions—disguised as objectivity—that lead frequentists to set the parameters of $M$ by maximizing $p(D∣M)$, under the false premise that this provides the best possible representation of the model. In essence, this fallacy leads to a confusion between the sampling probability $p(D∣M)$ and the inferential probability $p(M∣D)$; the latter  when correctly obtained  quantifies the plausibility of the hypothesis represented by $M$ - precisely what we seek. The historical dimensions of this frequentist illusion are fascinating in their own right, and we invite interested readers to consult works such as McGrayne [@mcgrayne] and Clayton [@clayton].
+
+
+Regrettably, the development of traditional ocean color algorithms relies on a fundamental statistical error. The error is the mistaken assumption that the relative frequencies observed in a finite sample can be taken as precise estimates of the underlying true probabilities. In other words, it is the error of conflating the empirical frequency—derived from a limited, noisy set of observations—with the long-run probability that would be obtained under an infinite number of trials, thereby ignoring the intrinsic uncertainty and variability that come with finite sampling. The fallout has and continues to be extremely detrimental. Traditional, frequentist approaches, where the variability in sample frequencies is erroneously treated as negligible, yield overconfident inferences, and allegedgly significant findings that do not hold water, in time leading to replication crises. 
+
+In the context of statistical modelling, where $M$ is a model that represents a hypothesized relationship between independent and dependent variables, data $D$ is collected to evaluate how well this relationship holds out. A skilled enough model $M$ is retained and used to make predictions; it is put into production. However practical problems arise because under the requentist framework, model evaluation centers on the likelihood $p(D∣M)$, the probability of observing the data given the model is true. With enough data the frequentist assumption is that this likelihood can be directly flipped to give the probability of the model being true, $p(M∣D)$. The leap of faith is completed by imposing unverified assumptions to allow setting model parameters by maximizing $p(D∣M)$. By this logical doing so provides the best model possible. The historical dimensions of how this snake oil was progressively brewed are fascinating in their own right, and we invite interested readers to consult works such as McGrayne [@mcgrayne] and Clayton [@clayton].
 
 Bayesianism, Frequentism's archrival, provides the framoework to establish the plausibility of $M$ using observations through the reinterpretation of how probability should be construed. As elaborated extensively by Jaynes [@jaynes2003probability], and more recently by practitioners like Gelman [@gelman2013bayesian], and McElreath [@mcelreath2015statistical], probability is best understood as a statement of our knowledge rather than as an inherent property of the data. the Bayesian perspective treats the data, once observed, as fixed and the model parameters as latent random variables the uncertainty of which  can—and should—be explicitly modeled via prior distributions. Prior distributions are probabilistic constructs that help workers encode prior knowledge. Priors can represents knowledge elicited from subject matter experts, assumptions held by the modeler or a complete absence thereof. 
 
@@ -55,3 +73,14 @@ The interpretability of the BART model is illustrated by partial dependence anal
 
 Statement of Contribution
 In this study, we develop and demonstrate a new global chlorophyll retrieval model based on Bayesian Additive Regression Trees implemented in PyMC. We train the BART model on a large, standardized dataset of satellite remote-sensing reflectance (Rrs) spectra matched with in situ chlorophyll measurements, using log₁₀-transformed Chl-a as the response to stabilize variance. The resulting model is applied globally to produce chlorophyll-a estimates from multi-spectral satellite data, with associated uncertainty estimates for each prediction. We show that this Bayesian tree-based model can serve as a general-purpose ocean color algorithm that is sensor-agnostic (provided reflectances are harmonized to common wavebands), interpretable, and uncertainty-aware. Unlike conventional empirical algorithms, the BART approach allows users to examine the inferred Rrs–Chl relationships and trust the model’s performance across regimes, while also quantifying confidence in each retrieval. This work thus contributes a novel methodological advance to satellite ocean color science: a unified chlorophyll retrieval model that marries the strengths of empirical algorithms (global applicability and simplicity) with the benefits of modern Bayesian machine learning (flexibility, interpretability, and rigorous uncertainty quantification). Our introduction of BART for global chlorophyll prediction opens the door for more robust monitoring of ocean biogeochemistry and improved integration of ocean color data into scientific and management applications.
+
+
+## Acknowledgments
+
+## Open research
+
+## References {.unnumbered}
+
+:::{#refs}
+
+:::
