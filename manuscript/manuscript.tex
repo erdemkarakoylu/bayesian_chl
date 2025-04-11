@@ -217,22 +217,22 @@ Algorithms}\label{historical-context-of-chlorophyll-algorithms}
 
 Satellite ocean color observations have long been fundamental for
 monitoring marine ecosystems, as they enable the global estimation of
-chlorophyll‑a---a key indicator of phytoplankton biomass and ocean
-productivity. Early empirical algorithms, notably developed by O'Reilly
-et al. (John E. O'Reilly et al., 1998; John E. O'Reilly et al., 2000),
-established the \(OCx\) family (where \(x\) denotes the number of bands
-used) of polynomial regression models. These models relate blue-to-green
-reflectance ratios (after log‑transformation) to in situ chlorophyll‑a,
-employing either straight band ratios (BR) or maximum band ratios
-(MBR)---the latter selecting the highest available blue-to-green ratio
-for any given observation as input to a high‑order polynomial. These
-formulations have served as the operational foundation for chlorophyll‑a
-products across a broad range of satellite ocean color sensors---from
-the pioneering Coastal Zone Color Scanner (CZCS) through SeaWiFS, MODIS,
-and MERIS to more recent missions---offering a straightforward and
-robust approach for Case‑1 waters. However, their performance is more
-limited in optically complex Case‑2 waters and remains sensitive to
-atmospheric correction errors.
+chlorophyll‑a (\(Chl_a\)) ---a key indicator of phytoplankton biomass
+and ocean productivity. Early empirical algorithms, notably developed by
+O'Reilly et al. (John E. O'Reilly et al., 1998; John E. O'Reilly et al.,
+2000), established the \(OCx\) family (where \(x\) denotes the number of
+bands used) of polynomial regression models. These models relate
+blue-to-green reflectance ratios (after log‑transformation) to in situ
+\(Chl_a\), employing either straight band ratios (BR) or maximum band
+ratios (MBR)---the latter selecting the highest available blue-to-green
+ratio for any given observation as input to a high‑order polynomial.
+These formulations have served as the operational foundation for
+chlorophyll‑a products across a broad range of satellite ocean color
+sensors---from the pioneering Coastal Zone Color Scanner (CZCS) through
+SeaWiFS, MODIS, and MERIS to more recent missions---offering a
+straightforward and robust approach for Case‑1 waters. However, their
+performance is more limited in optically complex Case‑2 waters and
+remains sensitive to atmospheric correction errors.
 
 Subsequent refinements were introduced to address these deficiencies.
 For example, Hu et al. (Hu et al., 2012) proposed a Color Index (CI)
@@ -247,149 +247,82 @@ Werdell (John E. O'Reilly \& Werdell, 2019) maintain that OC5 extends
 the spectral basis by incorporating the 412\,nm band, thereby exploiting
 its strong signal in clear, oligotrophic waters, while OC6 replaces the
 traditional denominator with the mean of the 555 and 670\,nm
-reflectances, improving the dynamic range at low chlorophyll
-concentrations. In total, (John E. O'Reilly \& Werdell, 2019) propose 65
-versions of BR/MBR \(OCx\) type algorithms for 25 sensors---on average,
-two or more variants per sensor. With this arsenal, it is hoped,
-researchers are better equipped to address the wide array of bio‑optical
-environments encountered in global ocean color applications.
+reflectances, with the aim of improving the dynamic range at low
+chlorophyll concentrations. In total, (John E. O'Reilly \& Werdell,
+2019) propose 65 versions of BR/MBR \(OCx\) type algorithms for 25
+sensors---on average, two or more variants per sensor. With this
+arsenal, it is hoped, researchers are better equipped to address the
+wide array of bio‑optical environments encountered in global ocean color
+applications.
 
 \subsubsection{Limitations of Existing
 Approaches}\label{limitations-of-existing-approaches}
 
-Regrettably, the development of traditional ocean color algorithms
-relies on a fundamental statistical error. This error originates in the
-conflation of empirical frequencies --- derived from a limited, noisy
-set of observations --- with the theoretical relative frequencies that
-would be observed over an infinite number of trials, thereby ignoring
-the intrinsic uncertainty and variability inherent in finite sampling.
-The fallout has and continues to be extremely detrimental to
-observational science. Traditional, frequentist approaches, where the
-variability in sample frequencies is treated as negligible, yield
-overconfident inferences, and allegedgly significant findings that do
-not hold water, in time leading to replication crises.
+Regrettably, the development of traditional ocean color predictive
+models relies on a fundamental statistical error that plagues most of
+observational science today; that of conflating sampling probability,
+with inferential probability. Consider data \(D\) that include
+predictive features (e.g.~Remote sensing reflectance - Rrs) and
+prediction targets (e.g.~\(Chl_a\) or phytoplankton absorption), and a
+model \(M\) (e.g.~OCx) hypothesized to adequately represent the
+statistical association between the two. The sampling probability
+\(p(D|M)\) also referred to as the likelihood, is the probability of
+\(D\) conditioned on \(M\) being ``true''. The common model fitting
+practice is to maximize \(p(D|M)\) - likelihood maximization - achieved
+by tuning \(M\)'s parameters. The unspoken assumption is that making
+\(M\) fit \(D\) as well as possible yields the best version of \(M\)
+given \(D\) i.e.~maximizing \(p(M|D)\), the inferential probability.
+This sneaky swapping from \(p(D|M)\) to \(p(M|D)\) is a violation of the
+rules of conditional probability, Bayes' theorem in particular.
+Jaynes(\textbf{jaynes2003?}) and later Clayton through his highly
+readable account (\textbf{clayton?}) are some of the more notable
+whistleblowers. Occasionally, in simple or well-behaved problems, with a
+large amount of data and no prior information available the maxima of
+both \(p(M|D)\) and \(p(D|M)\) can indeed converge on the same answer.
+Yet there is no guarantee predictability for this outcome however, and
+the fallout of this abuse is non-negligible, most noticeably in terms of
+models that don't generalize well, ad-hoc uncertainty estimation
+attempts, and more broadly a replication crisis.
 
-In statistical modeling, the goal is to assess how well a hypothesized
-model \(M\) represents the relationship between independent and
-dependent variables based on collected data \(D\). Frequentist methods
-focus exclusively on the likelihood \(p(D|M)\), estimating model
-parameters by maximizing this probability. This approach assumes that,
-with a sufficiently large dataset, the chosen parameters reliably
-reflect the true system. However, in practice, any finite dataset
-carries inherent uncertainty and noise. As a consequence, models
-developed under this framework tend to be overconfident - yielding point
-estimates that do not adequately capture the variability of
-\emph{in-situ} observations - and may not generalize well to new data.
-Ad hoc attempts to generate uncertainty, such as bootstrapping, further
-compound the problem by resampling the flawed, finite observations and
-thus amplifying any existing biases. This overconfidence, coupled with
-unverified assumptions presented as objectivity, can lead to misleading
-inferences and contribute to replication challenges. The historical
-process by which these assumptions have been enshrined is fascinating in
-its own right, and we invite interested readers to consult works such as
-McGrayne (\textbf{mcgrayne?}) and Clayton (\textbf{clayton?}).
+Some researchers have attempted to deal with these issues. (Seegers et
+al., 2018) e.g.~have proposed alternative metrics to circumvent the
+inadequate assumptions of the frequentist approach. Others have tried to
+go a step futher and switch to the Bayesian paradigm. E.g. (Frouin \&
+Pelletier, 2013) have proposed a Bayesian inversion scheme for
+atmospheric correction. (\textbf{shi2015?}) proposed a probabilistic
+method to merge data from different sensors. (Craig \& Karaköylü, 2019)
+have proposed a Bayesian neural network approach using Hamiltonian Monte
+Carlo sampling to retrieve Inherent Optical Properties (IOP) from
+Top-of-the-atmosphere (TOA) radiance. (\textbf{werther2022?}) used
+Monte-Carlo dropout as deep neural net training method to obtain
+prediction uncertainty. (Erickson et al., 2023) have proposed using
+conjugate Gaussian prior and likelihood to predict IOPs using GIOP as a
+forward model. (\textbf{hammout2024?}) have proposed a Bayesian Neural
+Network trained using Stochastic Variational Inference to predict
+\(Chl_a\) from ocean color observations. Yet most of these approaches
+retain variable levels of frequentism by applying only part of what is
+commonly referred to as the Bayesian workflow(\textbf{betancourt2019?}).
 
-As elaborated extensively by Jaynes (\textbf{jaynes2003probability?}),
-and more recently by practitioners like Gelman
-(\textbf{gelman2013bayesian?}), and McElreath
-(\textbf{mcelreath2015statistical?}), probability is best understood as
-a degree of knowledge rather than as a long-run frequency. Accordingly
-in this Bayesian framework, the prior \(p(M)\) encodes our current state
-of knowledge about the model's parameters before \(D\) is observed. This
-knowledge can be elicited from experts, or if none exixts weakly
-informative priors can be used. Note that whether \(M\) is based on
-empirically observed relationships, analytical understanding, or
-something in between is irrelevant to its integration into this
-framework. Once the data \(D\) are collected, Bayes' theorem combines
-the likelihood \(p(D|M)\) with the prior \(p(M)\) to yield the posterior
-distribution \(p(M|D)\), which represents an updated level of knowledge
-about the model's parameters. Crucially this posterior can then serve as
-the new prior when new data become available, allowing for sequential
-integration of new information. The by-product of this approach is
-uncertainty estimates that more accurately reflect the complexities of
-the underlying system as currently understood. In effect, rather than
-relying on single point estimates based on \(p(D|M)\), the posterior
-\(p(M|D)\) can be mined to retrieve a range of plausible parameter
-values through credible intervals offering a more transparent and robust
-basis for inference. This principled integration of prior knowledge with
-observed data is central to our approach, as detailed further in the
-Supplementary Material.
+In this paper we propose a modified workflow to Bayesian modeling for
+Ocean Color emote sensing. We propose that this workflow include; (1)
+one or more model building, (2) prior formulation via expert knowledge
+elicitation and/or data-free simulation, (3) fitting model to data, (4)
+model validation, comparison and selection, (5) interpretation of
+results via posterior analysis, (6) prediction on new observation, (7)
+update the posterior when new labeled data becomes available. As
+illustration we recast some of the pre-existing \(OCx\) models into
+their probabilistic version. To illustrate model comparison and
+selection we also build and evaluate Bayesian Additive Tree Regregssion
+(BART; (Chipman et al., 2010)) type model.
 
-In this paper we recast a number of OCx-like algorithms in the Bayesian
-framework. We also explore a different kind of
+\subsection{Methods}\label{methods}
 
-\subsubsection{Motivation for Bayesian Tree-Based
-Models}\label{motivation-for-bayesian-tree-based-models}
+\subsubsection{Prior Elicitation and Model
+Formulation}\label{prior-elicitation-and-model-formulation}
 
-To address these limitations, we explore Bayesian tree-based modeling --
-specifically, Bayesian Additive Regression Trees (BART) -- as a novel
-approach for ocean color chlorophyll retrieval. BART offers several
-advantages for this application:
+\subsubsection{Data Preprocessing}\label{data-preprocessing}
 
-Direct Bayesian inference: As a Bayesian ensemble method, BART directly
-targets the posterior distribution \(p(Chl | Rrs)\) rather than a purely
-empirical fit. The model inherently provides a probabilistic mapping
-from reflectance to chlorophyll. Rather than producing a single best-fit
-value, BART returns a posterior mean and credible interval for each
-prediction, naturally quantifying predictive uncertainty.
-
-Uncertainty quantification: The BART framework includes uncertainty in
-its predictions by design. Every estimated chlorophyll value comes with
-a confidence range (e.g., 95\% credible interval) reflecting model
-uncertainty and observational noise. This is a key improvement over
-deterministic algorithms, enabling more reliable use of the data for
-scientific and operational purposes where understanding uncertainty is
-crucial e.g.~for forecasting trends.
-
-Interpretability: Being a sum-of-trees model, BART can be interrogated
-to understand the influence of each input variable. Tools such as
-partial dependence plots allow us to visualize the relationship between
-each spectral band and the predicted chlorophyll, marginalizing over
-other bands. In contrast to high-order polynomial coefficients, these
-tree-based partial dependencies are intuitively interpretable. For
-instance, one can observe how changes in a particular waveband's
-reflectance (holding others average) drive the chlorophyll estimate,
-revealing any thresholds or non-linear responses.
-
-BART's modeling approach is non-parametric and highly flexible, which
-means it can capture complex, non-linear relationships between
-multi-spectral Rrs inputs and chlorophyll without imposing a rigid
-functional form. At the same time, its Bayesian regularization -- which
-shrinks the contribution of each individual tree -- helps prevent
-overfitting even with a rich model structure. This balance between
-flexibility and regularization is well-suited to global ocean color
-data, where the true Rrs--Chl relationship is known to be non-linear and
-context-dependent, yet a model must generalize across diverse water
-types.
-
-The interpretability of the BART model is illustrated by partial
-dependence analysis on the six input Rrs bands (centered approximately
-at 412, 443, 490, 510, 555, and 670 nm). The partial dependence plots
-reveal nuanced spectral--chlorophyll relationships and clear transitions
-in the dominant wavelength influence across different chlorophyll
-regimes. For example, the shorter blue wavelengths (412--443 nm) show a
-strong inverse influence on predicted \(log(Chl_a)\) (higher blue
-reflectance corresponds to lower chlorophyll) that gradually saturates
-in the most oligotrophic waters, consistent with the leveling off of
-blue-to-green ratios at very low Chl. The green band (\textasciitilde555
-nm) exhibits a more complex, non-monotonic effect: at low reflectance
-(clear water) its influence on the Chl estimate is minimal, but it
-becomes increasingly important through intermediate reflectance ranges
--- reflecting the band-difference signal exploited by the CI algorithm
--- and then diminishes for very high chlorophyll where green reflectance
-tends to flatten. In contrast, the red band (\textasciitilde670 nm) has
-virtually no effect on the model's predictions until a threshold is
-reached at elevated chlorophyll concentrations, after which its
-influence steeply increases. This behavior aligns with optical
-expectations, since red reflectance is negligible in low-Chl waters but
-rises sharply once phytoplankton absorption in the blue saturates and
-biomass is high. These partial dependence results indicate that the BART
-model automatically learns the piecewise spectral logic that
-oceanographers often handle via separate algorithms (blue/green ratios
-for low-to-moderate Chl, red bands for high Chl). The ability to capture
-such regime-dependent responses in a single unified model, and to
-visualize them, underscores the interpretability and scientific insight
-provided by the BART approach.
+\subsubsection{}\label{section}
 
 \section{Data Preprocessing}
 
@@ -459,6 +392,28 @@ scientific and management applications.
 \begin{CSLReferences}{1}{0}
 \vspace{1em}
 
+\bibitem[\citeproctext]{ref-chipman2010bart}
+Chipman, H. A., George, E. I., \& McCulloch, R. E. (2010). BART:
+Bayesian additive regression trees. \emph{The Annals of Applied
+Statistics}, \emph{4}(1), 266--298.
+\url{https://doi.org/10.1214/09-AOAS285}
+
+\bibitem[\citeproctext]{ref-craig2019}
+Craig, S. E., \& Karaköylü, E. M. (2019). Bayesian models for deriving
+biogeochemical information from satellite ocean color.
+\emph{EarthArXiv}. \url{https://doi.org/10.31223/osf.io/shp6y}
+
+\bibitem[\citeproctext]{ref-erickson2023}
+Erickson, Z. K., McKinna, L. I. W., Werdell, P. J., \& Cetinić, I.
+(2023). Bayesian approach to a generalized inherent optical property
+model. \emph{Optics Express}, \emph{31}, 22790--22801.
+\url{https://doi.org/10.1364/oe.486581}
+
+\bibitem[\citeproctext]{ref-frouin2013}
+Frouin, R., \& Pelletier, B. (2013). Bayesian methodology for ocean
+color remote sensing. Retrieved from
+\url{https://hal.archives-ouvertes.fr/hal-00822032}
+
 \bibitem[\citeproctext]{ref-hu2012novel}
 Hu, C., Lee, Z., \& Franz, B. (2012). Chlorophyll aalgorithms for
 oligotrophic oceans: A novel approach based on three-band reflectance
@@ -491,6 +446,12 @@ O'Reilly, John E., Maritorena, S., Siegel, D. A., O'Brien, M. C., Toole,
 D., Mitchell, B. G., et al. (2000). Ocean color chlorophyll a algorithms
 for SeaWiFS, OC2, and OC4: Version 4. \emph{SeaWiFS Postlaunch
 Calibration and Validation Analyses, Part}, \emph{3}, 9--23.
+
+\bibitem[\citeproctext]{ref-seegers2018}
+Seegers, B. N., Stumpf, R. P., Schaeffer, B. A., Loftin, K. A., \&
+Werdell, P. J. (2018). Performance metrics for the assessment of
+satellite data products: An ocean color case study. \emph{Opt. Express},
+\emph{26}(6), 7404--7422. \url{https://doi.org/10.1364/OE.26.007404}
 
 \end{CSLReferences}
 
