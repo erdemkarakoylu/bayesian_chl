@@ -196,7 +196,7 @@
 Uncertainty-Aware Chlorophyll Estimation}
 
 \authors{Erdem M. Karaköylü\affil{1}, Susanne E. Craig\affil{2}}
-\affiliation{1}{Consultant, }\affiliation{2}{NASA, }
+\affiliation{1}{Independant Consultant, }\affiliation{2}{NASA, }
 \correspondingauthor{Erdem M. Karaköylü}{erdemk@protonmail.com}
 
 
@@ -210,9 +210,9 @@ Placeholder
 
 
 
-\subsection{Introduction}\label{introduction}
+\section{Introduction}\label{introduction}
 
-\subsubsection{Historical Context of Chlorophyll
+\subsection{Historical Context of Chlorophyll
 Algorithms}\label{historical-context-of-chlorophyll-algorithms}
 
 Satellite ocean color observations have long been fundamental for
@@ -255,74 +255,121 @@ arsenal, it is hoped, researchers are better equipped to address the
 wide array of bio‑optical environments encountered in global ocean color
 applications.
 
-\subsubsection{Limitations of Existing
+\subsection{Limitations of Existing
 Approaches}\label{limitations-of-existing-approaches}
 
 Regrettably, the development of traditional ocean color predictive
 models relies on a fundamental statistical error that plagues most of
 observational science today; that of conflating sampling probability,
-with inferential probability. Consider data \(D\) that include
-predictive features (e.g.~Remote sensing reflectance - Rrs) and
-prediction targets (e.g.~\(Chl_a\) or phytoplankton absorption), and a
-model \(M\) (e.g.~OCx) hypothesized to adequately represent the
-statistical association between the two. The sampling probability
-\(p(D|M)\) also referred to as the likelihood, is the probability of
-\(D\) conditioned on \(M\) being ``true''. The common model fitting
-practice is to maximize \(p(D|M)\) - likelihood maximization - achieved
-by tuning \(M\)'s parameters. The unspoken assumption is that making
-\(M\) fit \(D\) as well as possible yields the best version of \(M\)
-given \(D\) i.e.~maximizing \(p(M|D)\), the inferential probability.
-This sneaky swapping from \(p(D|M)\) to \(p(M|D)\) is a violation of the
-rules of conditional probability, Bayes' theorem in particular.
-Jaynes(\textbf{jaynes2003?}) and later Clayton through his highly
-readable account (\textbf{clayton?}) are some of the more notable
-whistleblowers. Occasionally, in simple or well-behaved problems, with a
-large amount of data and no prior information available the maxima of
-both \(p(M|D)\) and \(p(D|M)\) can indeed converge on the same answer.
-Yet there is no guarantee predictability for this outcome however, and
-the fallout of this abuse is non-negligible, most noticeably in terms of
-models that don't generalize well, ad-hoc uncertainty estimation
-attempts, and more broadly a replication crisis.
+with inferential probability(Scheemaekere \& Szafarz (2011).) Consider a
+dataset \(D\) that consists of input-output pairs - e.g.~Remote sensing
+reflectance (Rrs) and chlorophyll-\emph{a} concentration \(Chl_a\) - and
+a model \(M\), such as OCx, hypothesized to describe the statistical
+association between them. The sampling probability \(p(D|M)\) represents
+the probability of observing the data \(D\) if model \(M\) were
+``true''. Standard model fitting maximizes this quantity (i.e.~the
+likelihood) by tuning the parameters of \(M\).
 
-Some researchers have attempted to deal with these issues. (Seegers et
-al., 2018) e.g.~have proposed alternative metrics to circumvent the
-inadequate assumptions of the frequentist approach. Others have tried to
-go a step futher and switch to the Bayesian paradigm. E.g. (Frouin \&
-Pelletier, 2013) have proposed a Bayesian inversion scheme for
-atmospheric correction. (\textbf{shi2015?}) proposed a probabilistic
-method to merge data from different sensors. (Craig \& Karaköylü, 2019)
-have proposed a Bayesian neural network approach using Hamiltonian Monte
-Carlo sampling to retrieve Inherent Optical Properties (IOP) from
-Top-of-the-atmosphere (TOA) radiance. (\textbf{werther2022?}) used
-Monte-Carlo dropout as deep neural net training method to obtain
-prediction uncertainty. (Erickson et al., 2023) have proposed using
-conjugate Gaussian prior and likelihood to predict IOPs using GIOP as a
-forward model. (\textbf{hammout2024?}) have proposed a Bayesian Neural
-Network trained using Stochastic Variational Inference to predict
-\(Chl_a\) from ocean color observations. Yet most of these approaches
-retain variable levels of frequentism by applying only part of what is
-commonly referred to as the Bayesian workflow(\textbf{betancourt2019?}).
+The unspoken assumption is that the model that best fits the data also
+best represents the underlying process. This constitutes an epistemic
+fallacy; substituting \(p(D|M)\) for \(p(M|D)\), in a violation of the
+rules of conditional probability inversion as framed by Bayes' theorem.
+While in well-behaved data-rich problems, the maxima of both expressions
+may coincide, this is an exception, not the rule. The consequences of
+this mistake are far-reaching as argued by (Clayton, 2022), with
+implications extending from scientific modeling to medicine, law, and
+public policy.
 
-In this paper we propose a modified workflow to Bayesian modeling for
-Ocean Color emote sensing. We propose that this workflow include; (1)
-one or more model building, (2) prior formulation via expert knowledge
-elicitation and/or data-free simulation, (3) fitting model to data, (4)
-model validation, comparison and selection, (5) interpretation of
-results via posterior analysis, (6) prediction on new observation, (7)
-update the posterior when new labeled data becomes available. As
-illustration we recast some of the pre-existing \(OCx\) models into
-their probabilistic version. To illustrate model comparison and
-selection we also build and evaluate Bayesian Additive Tree Regregssion
-(BART; (Chipman et al., 2010)) type model.
+In science, this fallacy contributes to models fail to generalize well,
+an impetus to produce ad-hoc or post-hoc uncertainty quantification, and
+yield published results that resist replication(Cobey et al. (2024)).
+These limiations are not confined to traditional hypothesis testing;
+they are embedded in the training.; they are embedded in the training
+and deployment of modern machine learning models as well. In regression
+and classification tasks, likelihood maximization is treated as
+sufficient for inference, even though it results in a single point
+estimate and fails to account for parameter uncertainty or model
+plausibility.
 
-\subsection{Methods}\label{methods}
+This epistemic shortcut has already been explicitly critiqued in the
+machine learning community. Gal (Gal, 2016) and Ghahramani
+(\textbf{gahramani2015probabilistic?}) emphasize that most ML models
+discard uncertainty entirely and treat the output of optimization as
+inference. This leads to overconfident predctions and brittle
+generalization, echoing Clayton's concerncs. Bishop (Bishop, 2006) also
+distiguishes between the utility of models and the inferential core
+required to quantify uncertainty, underscoring that likelihood is not
+enough and that the Bernoulli fallacy pervades the very logic of applied
+machine learning.
 
-\subsubsection{Prior Elicitation and Model
+\subsection{Overcoming limitations}\label{overcoming-limitations}
+
+There have been attempts to address these issues. (Seegers et al., 2018)
+have proposed alternative metrics to circumvent the inadequate
+assumptions of the frequentist approach. Others have tried to go a step
+futher incorporate Bayesian concepts. E.g. (Frouin \& Pelletier, 2013)
+have proposed a Bayesian inversion scheme for atmospheric correction.
+(\textbf{shi2015?}) proposed a probabilistic method to merge data from
+different sensors. (Craig \& Karaköylü, 2019) have proposed a Bayesian
+neural network (BNN) approach using Hamiltonian Monte Carlo sampling to
+retrieve Inherent Optical Properties (IOP) from Top-of-the-atmosphere
+(TOA) radiance. (\textbf{werther2022?}) used Monte-Carlo dropout to
+approximate a deep BNN. (Erickson et al., 2023) have proposed using
+conjugate Gaussian prior and likelihood to frame the GIOP as Bayesian
+model to predict IOPs with uncertainty. (\textbf{hammout2024?}) have
+proposed a BNN approximation via Stochastic Variational Inference to
+predict \(Chl_a\) from ocean color observations. Yet most of these
+approaches retain variable levels of frequentism by applying only part
+of what is now commonly referred to as the Bayesian
+workflow(\textbf{bgelman2019?}).
+
+\subsection{In search of our Bayesian
+workflow}\label{in-search-of-our-bayesian-workflow}
+
+The Bayesian workflow is a recognizable and unifying way of approaching
+statistical modeling, initially championed by statisticians at Columnbia
+University (\textbf{gelman\_bda?}) subsequently quick endorsed and
+further developed by researchers dealing with scant and noisy data (e.g.
+(\textbf{mcelreath\_stat\_rethink?})). That is not to say that all steps
+are applicable to all fields of research and all intents. The workflow
+can and should be tailored to the researcher's field. (Wolkovich et al.,
+2024) has proposed a four-step process for Ecological modeling. However
+there are some core steps that should be followed. (1) Begin with one,
+or better yet, more than one conceptual models and code them up. Model
+building include prior formulation to encode existing knowledge. Priors
+are part of the model structure and make the researcher's assumptions
+transparent, providing a first avenue of critique and improvement. (2)
+Check assumptions by a simulation process known as \emph{Prior
+Predictive Checks}. Bayesian models are generative, meaning they can run
+on empty, that is produce results without data. This allows a sanity
+check of the built-in assumptions. Non-sensical simulation results
+indicate assumptions must be revisited. (3) Collect data and conduct
+exploratory data analysis. Knowing the data will be critical to
+understanding potential problems during fitting; e..g multicollinearity
+of input features. (4) Diagnostics; the fitting process and the
+resulting posterior distribution provide rich constructs that can be
+mined for a great deal of information. Most modern packages (e.g.~Stan,
+PyMC, Numpyro, etc) offer a great many tools to extract insights. (5)
+Model compasison and selection. Often a model will perform markedly
+better, which is useful in terms predictive performance, but more
+importantly in terms of generating insights. (6) Sequential update; a
+model's output, the posterior distribution becomes the new prior every
+time new data becomes available for a new sequence of model fitting.
+
+In this paper we leverage past work and recast some of the pre-existing
+\(OCx\) models into their probabilistic version. We also propose
+alternative models, namely Bayesian Additive Regression Trees (BART,
+(Chipman et al., 2010)) as a robust flexible method that has been used
+for diverse application ((Linero, 2017).)
+
+\section{Methods}\label{methods}
+
+\subsection{Prior Elicitation and Model
 Formulation}\label{prior-elicitation-and-model-formulation}
 
-\subsubsection{Data Preprocessing}\label{data-preprocessing}
+\subsection{Data Preprocessing}\label{data-preprocessing}
 
-\subsubsection{}\label{section}
+\subsection{}\label{section}
 
 \section{Data Preprocessing}
 
@@ -392,11 +439,31 @@ scientific and management applications.
 \begin{CSLReferences}{1}{0}
 \vspace{1em}
 
+\bibitem[\citeproctext]{ref-baker2016}
+Baker, M. (2016). 1,500 scientists lift the lid on reproducibility.
+\emph{Nature}, \emph{533}(7604), 452--454.
+\url{https://doi.org/10.1038/533452a}
+
+\bibitem[\citeproctext]{ref-bishop2006pattern}
+Bishop, C. M. (2006). \emph{Pattern recognition and machine learning}.
+Springer.
+
 \bibitem[\citeproctext]{ref-chipman2010bart}
 Chipman, H. A., George, E. I., \& McCulloch, R. E. (2010). BART:
 Bayesian additive regression trees. \emph{The Annals of Applied
 Statistics}, \emph{4}(1), 266--298.
 \url{https://doi.org/10.1214/09-AOAS285}
+
+\bibitem[\citeproctext]{ref-clayton2022bernoulli}
+Clayton, A. (2022). \emph{Bernoulli's fallacy: Statistical illogic and
+the crisis of modern science}. Columbia University Press. Retrieved from
+\url{https://books.google.com/books?id=BT4CzwEACAAJ}
+
+\bibitem[\citeproctext]{ref-cobey2024biomedical}
+Cobey, K. D., Ebrahimzadeh, S., Page, M. J., Thibault, R. T., Nguyen,
+P.-Y., Abu-Dalfa, F., \& Moher, D. (2024). Biomedical researchers'
+perspectives on the reproducibility of research. \emph{PLoS Biology},
+\emph{22}(11), e3002870.
 
 \bibitem[\citeproctext]{ref-craig2019}
 Craig, S. E., \& Karaköylü, E. M. (2019). Bayesian models for deriving
@@ -414,6 +481,10 @@ Frouin, R., \& Pelletier, B. (2013). Bayesian methodology for ocean
 color remote sensing. Retrieved from
 \url{https://hal.archives-ouvertes.fr/hal-00822032}
 
+\bibitem[\citeproctext]{ref-gal2016uncertainty}
+Gal, Y. (2016). \emph{Uncertainty in deep learning} (PhD thesis).
+University of Cambridge.
+
 \bibitem[\citeproctext]{ref-hu2012novel}
 Hu, C., Lee, Z., \& Franz, B. (2012). Chlorophyll aalgorithms for
 oligotrophic oceans: A novel approach based on three-band reflectance
@@ -427,6 +498,16 @@ Hu, C., Feng, L., Lee, Z., Franz, B. A., Bailey, S. W., Werdell, P. J.,
 products through algorithm refinement and data recovery. \emph{Journal
 of Geophysical Research: Oceans}, \emph{124}(3), 1524--1543.
 https://doi.org/\url{https://doi.org/10.1029/2019JC014941}
+
+\bibitem[\citeproctext]{ref-jaynes2003probability}
+Jaynes, E. T., \& Bretthorst, G. L. (2003). \emph{Probability theory:
+The logic of science}. Cambridge University Press. Retrieved from
+\url{https://books.google.com/books?id=tTN4HuUNXjgC}
+
+\bibitem[\citeproctext]{ref-linero2017}
+Linero, A. R. (2017). A review of tree-based bayesian methods.
+\emph{Communications for Statistical Applications and Methods},
+\emph{24}, 543--559. \url{https://doi.org/10.29220/CSAM.2017.24.6.543}
 
 \bibitem[\citeproctext]{ref-oreilly2019}
 O'Reilly, John E., \& Werdell, P. J. (2019). Chlorophyll algorithms for
@@ -447,11 +528,21 @@ D., Mitchell, B. G., et al. (2000). Ocean color chlorophyll a algorithms
 for SeaWiFS, OC2, and OC4: Version 4. \emph{SeaWiFS Postlaunch
 Calibration and Validation Analyses, Part}, \emph{3}, 9--23.
 
+\bibitem[\citeproctext]{ref-DeScheemaekere2011}
+Scheemaekere, X. D., \& Szafarz, A. (2011). The inference fallacy from
+bernoulli to kolmogorov. Retrieved from
+\url{https://www.researchgate.net/publication/254450993_The_Inference_Fallacy_From_Bernoulli_to_Kolmogorov}
+
 \bibitem[\citeproctext]{ref-seegers2018}
 Seegers, B. N., Stumpf, R. P., Schaeffer, B. A., Loftin, K. A., \&
 Werdell, P. J. (2018). Performance metrics for the assessment of
 satellite data products: An ocean color case study. \emph{Opt. Express},
 \emph{26}(6), 7404--7422. \url{https://doi.org/10.1364/OE.26.007404}
+
+\bibitem[\citeproctext]{ref-wolkovich2024fourstepbayesianworkflowimproving}
+Wolkovich, E., Davies, T. J., Pearse, W. D., \& Betancourt, M. (2024). A
+four-step bayesian workflow for improving ecological science. Retrieved
+from \url{https://arxiv.org/abs/2408.02603}
 
 \end{CSLReferences}
 
