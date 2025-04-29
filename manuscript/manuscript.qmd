@@ -15,7 +15,7 @@ author:
       - Visualization
       - Project administration
     affiliations:
-      - Independant Consultant
+      - Independant Researcher
   - name: Susanne E. Craig
     orcid: 0000-0002-8963-0951
     corresponding: false
@@ -23,22 +23,24 @@ author:
     roles:
       - Co-Investigator
     affiliations:
-      - NASA
+      - NASA/UMBC
 abstract: Placeholder
 plain-language-summary: Placeholder
-keywords: []
+keywords: ['Bayesian modeling', 'Ocean Color', ]
 key-points:
   - Bayesian models have not been fully adopted in Ocean Color remote sensing yet.
-  - Up to three key point statements are allowed, and each is limited to at most 140 characters with no abbreviations.
-  - Key Points are not included in the word count.
+  - A Bayesian workflow is a principled guide to a fully Bayesian study
+  - 
 bibliography: references.bib
 citation:
   container-title: Geophysical Research Letters
 keep-tex: true
+number-sections: false
 date: last-modified
 ---
 
 ## Introduction
+
 
 ### Historical Context of Chlorophyll Algorithms
 Satellite ocean color observations have long been fundamental for monitoring marine ecosystems, as they enable global estimation of chlorophyll‑a ($Chl_a$) — a key indicator of phytoplankton biomass and ocean productivity. Early empirical algorithms, notably developed by O’Reilly et al. [@oreilly1998; @oreilly2000], established the $OCx$ family (where $x$ denotes the number of bands used) of polynomial regression models. These models relate blue-to-green reflectance ratios (after log‑transformation) to in situ $Chl_a$, employing either straight band ratios (BR) or maximum band ratios (MBR)—the latter selecting the highest available blue-to-green ratio for any given observation as input to a high‑order polynomial. These formulations have served as the operational foundation for chlorophyll‑a products across a broad range of satellite ocean color sensors—from the pioneering Coastal Zone Color Scanner (CZCS) through SeaWiFS, MODIS, and MERIS to more recent missions—offering a straightforward and robust approach for Case‑1 waters. However, their performance is more limited in optically complex Case‑2 waters and remains sensitive to atmospheric correction errors.
@@ -64,17 +66,71 @@ However there are some core steps that should be followed. (1) Begin with one, o
 
 In this paper we leverage past work and recast some of the pre-existing $OCx$ models into their probabilistic version. We also propose alternative models, namely Bayesian Additive Regression Trees (BART, [@chipman2010bart]) as a robust flexible method that has been used for diverse application ([@linero2017].) 
 
+## Methods
 
+We performed the following five steps. (1) Prior elicitation and model formulation; (2) Data preprocessing and exploratory analysis; (3) model fitting and diagnostics; (4) model evaluation and comparison.
+
+### Prior Elicitation, Model Formulation, and Prior Predictive Checks
+
+Skip to content
+You said:
+Here is my introduction to my Bayesian modeling study and the beginning of my methods section. Suggest a continuation to the prior elicitation section
+
+### Historical Context of Chlorophyll Algorithms
+Satellite ocean color observations have long been fundamental for monitoring marine ecosystems, as they enable global estimation of chlorophyll‑a ($Chl_a$) — a key indicator of phytoplankton biomass and ocean productivity. Early empirical algorithms, notably developed by O’Reilly et al. [@oreilly1998; @oreilly2000], established the $OCx$ family (where $x$ denotes the number of bands used) of polynomial regression models. These models relate blue-to-green reflectance ratios (after log‑transformation) to in situ $Chl_a$, employing either straight band ratios (BR) or maximum band ratios (MBR)—the latter selecting the highest available blue-to-green ratio for any given observation as input to a high‑order polynomial. These formulations have served as the operational foundation for chlorophyll‑a products across a broad range of satellite ocean color sensors—from the pioneering Coastal Zone Color Scanner (CZCS) through SeaWiFS, MODIS, and MERIS to more recent missions—offering a straightforward and robust approach for Case‑1 waters. However, their performance is more limited in optically complex Case‑2 waters and remains sensitive to atmospheric correction errors.
+
+Subsequent refinements were introduced to address these deficiencies. For example, Hu et al. [@hu2012novel] proposed a Color Index (CI) formulation that employs a band‑difference approach to reduce sensitivity to residual atmospheric errors and instrument noise, with further improvements enhancing inter‑sensor agreement [@hu2019improving]. The increasing availability of calibration data (e.g., [@Valente2015]) and ongoing algorithmic improvements have led to the development of additional variants of the $OCx$ algorithms—specifically, the OC5 and OC6 formulations. O’Reilly and Werdell [@oreilly2019] maintain that OC5 extends the spectral basis by incorporating the 412 nm band, thereby exploiting its strong signal in clear, oligotrophic waters, while OC6 replaces the traditional denominator with the mean of the 555 and 670 nm reflectances, with the aim of improving the dynamic range at low chlorophyll concentrations. In total, [@oreilly2019] propose 65 versions of BR/MBR $OCx$ type algorithms for 25 sensors—on average, two or more variants per sensor. With this arsenal, it is hoped, researchers are better equipped to address the wide array of bio‑optical environments encountered in global ocean color applications.
+
+### Limitations of Existing Approaches
+Regrettably, the development of traditional ocean color predictive models relies on a fundamental statistical error that plagues most of observational science today; that of conflating sampling probability, with inferential probability([@jaynes2003probability, @DeScheemaekere2011].) Consider a dataset $D$ that consists of input-output pairs - e.g. Remote sensing reflectance (Rrs) and  chlorophyll-*a* concentration $Chl_a$ - and a model $M$, such as OCx, hypothesized to describe the statistical association between them. The sampling probability $p(D|M)$ represents the probability of observing the data $D$ if model $M$ were "true". Standard model fitting maximizes this quantity (i.e. the likelihood) by tuning the parameters of $M$. 
+
+The unspoken assumption is that the model that best fits the data also best represents the underlying process. This constitutes an epistemic fallacy; substituting $p(D|M)$ for $p(M|D)$, in a violation of the rules of conditional probability inversion as framed by Bayes' theorem. While in well-behaved data-rich problems, the maxima of both expressions may coincide, this is an exception, not the rule. The consequences of this mistake are far-reaching as argued by [@clayton2022bernoulli], with implications extending from scientific modeling to medicine, law, and public policy.
+
+In science, this fallacy contributes to  models fail to generalize well, an impetus to produce ad-hoc or post-hoc  uncertainty quantification, and yield published results that resist replication([@baker2016, @cobey2024biomedical]). These limiations are not confined to traditional hypothesis testing; they are embedded in the training.; they are embedded in the training and deployment of modern machine learning models as well. In regression and classification tasks, likelihood maximization is treated as sufficient for inference, even though it results in a single point estimate and fails to account for parameter uncertainty or model plausibility.
+
+This epistemic shortcut has already been explicitly critiqued in the machine learning community. Gal [@gal2016uncertainty] and Ghahramani [@gahramani2015probabilistic] emphasize that most ML models discard uncertainty entirely and treat the output of optimization as inference. This leads to overconfident predctions and brittle generalization, echoing Clayton's concerncs. Bishop [@bishop2006pattern] also distiguishes between the utility of models and the inferential core required to quantify uncertainty, underscoring that likelihood is not enough and that the Bernoulli fallacy pervades the very logic of applied machine learning.
+
+
+### Overcoming limitations
+There have been attempts to address these issues. [@seegers2018] have proposed alternative metrics to circumvent the inadequate assumptions of the frequentist approach. Others have tried to go a step futher incorporate Bayesian concepts. E.g. [ @frouin2013] have proposed a Bayesian inversion scheme for atmospheric correction. [@shi2015] proposed a probabilistic method to merge data from different sensors. [@craig2019] have proposed a Bayesian neural network (BNN) approach using Hamiltonian Monte Carlo sampling to retrieve Inherent Optical Properties (IOP) from Top-of-the-atmosphere (TOA) radiance. [@werther2022] used Monte-Carlo dropout to approximate a deep BNN. [@erickson2023] have proposed using conjugate Gaussian prior and likelihood to frame the GIOP as Bayesian model to predict IOPs with uncertainty. [@hammout2024] have proposed a BNN approximation via Stochastic Variational Inference to predict $Chl_a$ from ocean color observations. Yet most of these approaches retain variable levels of frequentism by applying only part of what is now commonly referred to as the Bayesian workflow[@bgelman2019]. 
+
+### The Bayesian workflow
+The Bayesian workflow is a recognizable and unifying approach to statistical modeling, primarily championed by statisticians at Columnbia University [@gelman_bda] subsequently endorsed and further developed by researchers dealing with scant and/or noisy data (e.g. [@mcelreath_stat_rethink]). Some researchers have modified this  researcher's field. [@wolkovich2024fourstepbayesianworkflowimproving] has proposed a four-step process for ecological modeling. 
+However there are some core steps that should be followed. (1) Begin with one, or better yet,  more than one conceptual models and code them up.  Model building include prior formulation to encode existing knowledge. Priors are part of the model structure and make the researcher's assumptions transparent, providing a first avenue of critique and improvement. (2) Check assumptions by a simulation process known as *Prior Predictive Checks*. Bayesian models are generative, meaning they can run on empty, that is produce results without data. This allows a sanity check of the built-in assumptions. Non-sensical simulation results indicate assumptions must be revisited. (3) Collect data and conduct exploratory data analysis. Knowing the data will be critical to understanding potential problems during fitting; e..g multicollinearity of input features. (4) Diagnostics; the fitting process and the resulting posterior distribution provide rich  constructs that can be mined for a great deal of information. Most modern packages (e.g. Stan, PyMC, Numpyro, etc) offer a great many tools to extract insights. (5) Model compasison and selection. Often a model will perform markedly better, which is useful in terms predictive performance, but more importantly in terms of generating insights. (6) Sequential update; a model's output, the posterior distribution becomes the new prior every time new data becomes available for a new sequence of model fitting.  
+
+In this paper we leverage past work and recast $OC6$ [@oreilly2019] as a Bayesian mdoel, because out of the $OCx$ family,  it integrates the most bands (i.e. information) into its structure. In addition, we also propose two more models. (1) Bayesian Additive Regression Trees (BART, [@chipman2010bart]); a robust flexible approach successfully used for diverse applications ([@linero2017].), and insensitive to the known multicollinearity issue between ocean color bands. (2) A hierarchical partial pooling linear model inspired from [@gordon1983]'s original band ratio-based linear regression, formulated to circumvent discontinuities mentioned by [@oreilly1998], while insuring maximal use of available information contained in the data set.
 
 ## Methods
 
-### Prior Elicitation and Model Formulation
+We performed the following five steps. (1) Prior elicitation and model formulation; (2) Data preprocessing and exploratory analysis; (3) model fitting and diagnostics; (4) model evaluation, comparison, and selection.
+
+
+### Prior Elicitation 
+Before fitting the Bayesian model to observational data, we performed a prior predictive evaluation based on simulated mock inputs to ensure that our model structure and prior choices were physically reasonable and aligned with established ocean color variability. For all 3 model types we simulated chlorophyll a with approximately log-normal distribution according to [@campbell1995].
+For $OC6$ and our hierarchical linear model we generated maximum band ratio (MBR) that roughly agree with [@oreilly2019] and references therein. BART prior is bases on model structured and elicitation is explained further below. 
+
+#### Mock MBR and Chlorophyll Data
+
+We generated synthetic MBR inputs based on empirical knowledge of global ocean conditions. Specifically, the dynamic range of MBR values was assumed to span approximately 0.3 to 30, corresponding to $log_{10}(MBR)$ values between -0.5 and 1.5 [@oreilly2019]. $log_{10}(MBR)$ values were drawn from a truncated normal distribution centered at 0.75 with a standard deviation of 0.5, ensuring denser sampling in typical oligotrophic to mesotrophic regimes while allowing coverage of extreme cases. 
+The corresponding predicted $log_{10}(Chl_a)$ ⁡ values were sampled, according to the physical (detection limits) and ecological expectations of chlorophyll variability [@campbell1995] from a truncated Gaussian likelihood bounded between -3 and 3.3, corresponding to chlorophyll concentrations ranging from 0.001 to 2000 mg m⁻³.
+
+#### Model Formulation
+To implement a robust Bayesian approach, we first conducted a thorough elicitation of priors informed by domain knowledge from previously published literature, where applicable. The choice of distribution for the model parameters is borne out of the following assumptions. 
+1. Parameter domain is $(- ∞, ∞)$ though, per [@oreilly2019], parameters are expected to be relatively close to 0
+2. Priors should be regularizing. 
+3. Parameter variance is finite. 
+
+Accordingly for the $OC6$ and hierarchical models we chose weakly informative Gaussian priors. For the likelihood, we chose a truncated Gaussian defined over a domain The standard deviations for these priors were chosen conservatively large enough to allow for flexibility, but sufficiently tight to capture known realistic parameter ranges derived from extensive empirical validation.
+
+For the BART model, priors were selected following recommendations by [@chipman2010bart] and subsequent applied literature [@linero2017; @hill2020bayesian]. The BART algorithm naturally encodes regularization and shrinkage through its tree structure, inherently balancing bias and variance. However, hyperparameters controlling tree depth and the number of trees were critical. We specified prior distributions for these hyperparameters based on guidelines from simulation studies and domain knowledge, starting with defaults recommended by the original authors and subsequently refining through preliminary runs and prior predictive checks.
+
+
+We carried out formal prior predictive checks to validate these choices. By generating synthetic data from the prior distributions and inspecting the resulting predictions for chlorophyll-a, we ensured that our priors neither produced unrealistic extremes nor overly constrained the model predictions. This procedure also allowed stakeholders with domain expertise to visually assess the suitability of our priors before fitting the model to actual data, thereby promoting transparency and interpretability.
+
+Finally, the resulting priors and model formulation and prior predictive cheks are available as a jupyter notebook in the accompanying repository for full reproducibility.
 
 ### Data Preprocessing
-
-### 
-
-
+ 
 
 \section{Data Preprocessing}
 
