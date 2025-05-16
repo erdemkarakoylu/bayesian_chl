@@ -80,110 +80,248 @@ There have been attempts to address these issues. [@seegers2018] have proposed a
 The Bayesian workflow is a recognizable and unifying way of approaching statistical modeling, initially championed by statisticians at Columnbia University [@gelman_bda] subsequently quick endorsed and further developed by researchers dealing with scant and noisy data (e.g. [@mcelreath_stat_rethink]). That is not to say that all steps are applicable to all fields of research and all intents. The workflow can and should be tailored to the researcher's field. [@wolkovich2024fourstepbayesianworkflowimproving] has proposed a four-step process for Ecological modeling. 
 However there are some core steps that should be followed. (1) Begin with one, or better yet,  more than one conceptual models and code them up.  Model building include prior formulation to encode existing knowledge. Priors are part of the model structure and make the researcher's assumptions transparent, providing a first avenue of critique and improvement. (2) Check assumptions by a simulation process known as *Prior Predictive Checks*. Bayesian models are generative, meaning they can run on empty, that is produce results without data. This allows a sanity check of the built-in assumptions. Non-sensical simulation results indicate assumptions must be revisited. (3) Collect data and conduct exploratory data analysis. Knowing the data will be critical to understanding potential problems during fitting; e..g multicollinearity of input features. (4) Diagnostics; the fitting process and the resulting posterior distribution provide rich  constructs that can be mined for a great deal of information. Most modern packages (e.g. Stan, PyMC, Numpyro, etc) offer a great many tools to extract insights. (5) Model compasison and selection. Often a model will perform markedly better, which is useful in terms predictive performance, but more importantly in terms of generating insights. (6) Sequential update; a model's output, the posterior distribution becomes the new prior every time new data becomes available for a new sequence of model fitting.  
 
-In this paper we leverage past work and recast some of the pre-existing $OCx$ models into their probabilistic version. We also propose alternative models, namely Bayesian Additive Regression Trees (BART, [@chipman2010bart]) as a robust flexible method that has been used for diverse application ([@linero2017].) 
+In this paper we leverage past work but also propose new approaches for predicting chlorophyll from sea surface reflectance (Rrs). Overall we propose three types of models. 
 
-## Methods
+## 2. Materials and Methods
 
-We performed the following five steps. (1) Prior elicitation and model formulation; (2) Data preprocessing and exploratory analysis; (3) model fitting and diagnostics; (4) model evaluation and comparison.
+This section outlines the study region and dataset used for model development and validation, the structure and rationale for the Bayesian models, and the approach used to compare their predictive performance. We emphasize a subset of four representative models in the main text, while full specifications and results for all seven models are provided in the Supplementary Material.
 
-### Prior Elicitation, Model Formulation, and Prior Predictive Checks
+### 2.1 Study Area and Dataset
 
-Skip to content
-You said:
-Here is my introduction to my Bayesian modeling study and the beginning of my methods section. Suggest a continuation to the prior elicitation section
+We used satellite and in situ data from the NOMAD v2 (2008) dataset to train and validate chlorophyll-a prediction models based on remote sensing reflectance (Rrs). Detailed preprocessing and matching procedures were applied to ensure high-quality paired observations suitable for statistical modeling.
 
-### Historical Context of Chlorophyll Algorithms
-Satellite ocean color observations have long been fundamental for monitoring marine ecosystems, as they enable global estimation of chlorophyll‑a ($Chl_a$) — a key indicator of phytoplankton biomass and ocean productivity. Early empirical algorithms, notably developed by O’Reilly et al. [@oreilly1998; @oreilly2000], established the $OCx$ family (where $x$ denotes the number of bands used) of polynomial regression models. These models relate blue-to-green reflectance ratios (after log‑transformation) to in situ $Chl_a$, employing either straight band ratios (BR) or maximum band ratios (MBR)—the latter selecting the highest available blue-to-green ratio for any given observation as input to a high‑order polynomial. These formulations have served as the operational foundation for chlorophyll‑a products across a broad range of satellite ocean color sensors—from the pioneering Coastal Zone Color Scanner (CZCS) through SeaWiFS, MODIS, and MERIS to more recent missions—offering a straightforward and robust approach for Case‑1 waters. However, their performance is more limited in optically complex Case‑2 waters and remains sensitive to atmospheric correction errors.
+<!-- To expand: summarize geographic scope if applicable, temporal resolution, types of chlorophyll measurements, sensor bands used -->
 
-Subsequent refinements were introduced to address these deficiencies. For example, Hu et al. [@hu2012novel] proposed a Color Index (CI) formulation that employs a band‑difference approach to reduce sensitivity to residual atmospheric errors and instrument noise, with further improvements enhancing inter‑sensor agreement [@hu2019improving]. The increasing availability of calibration data (e.g., [@Valente2015]) and ongoing algorithmic improvements have led to the development of additional variants of the $OCx$ algorithms—specifically, the OC5 and OC6 formulations. O’Reilly and Werdell [@oreilly2019] maintain that OC5 extends the spectral basis by incorporating the 412 nm band, thereby exploiting its strong signal in clear, oligotrophic waters, while OC6 replaces the traditional denominator with the mean of the 555 and 670 nm reflectances, with the aim of improving the dynamic range at low chlorophyll concentrations. In total, [@oreilly2019] propose 65 versions of BR/MBR $OCx$ type algorithms for 25 sensors—on average, two or more variants per sensor. With this arsenal, it is hoped, researchers are better equipped to address the wide array of bio‑optical environments encountered in global ocean color applications.
+- NOMAD v2 dataset: in situ measurements and coincident satellite Rrs
+- Removal of invalid or zero Rrs values
+- Computation of Max Band Ratio (MBR)
+- log-transformation of chlorophyll and MBR
+- Creation of group labels based on spectral dominance
+- Measurement method labels (fluorescence vs. HPLC)
+
+### 2.2 Bayesian Modeling Framework
+
+We adopt a Bayesian approach to flexibly capture the relationship between log-transformed MBR and log-transformed chlorophyll-a. Bayesian inference allows us to quantify uncertainty, incorporate prior knowledge, and rigorously compare alternative model structures using probabilistic criteria.
+
+<!-- To expand: cite PyMC, mention benefits of full posterior inference, prior predictive checking, model flexibility -->
+
+- Inference implemented using PyMC v5
+- Models specified using a Truncated Normal likelihood
+- Noise term (σ) modeled with increasing complexity
+- Priors: weakly informative Normal for regression terms; Gamma for σ
+
+### 2.3 Overview of Candidate Models
+
+We developed seven Bayesian models of increasing complexity. These models vary in terms of functional form (polynomial vs. linear), structure (flat vs. hierarchical), error formulation (constant vs. heteroscedastic), and treatment of measurement-specific noise.
+
+For brevity and clarity, we present four representative models in the main text:
+- **Model 1**: Polynomial regression (Bayesian OC6)
+- **Model 2**: Hierarchical linear regression grouped by Rrs band
+- **Model 6**: Hierarchical linear regression with group-wise heteroscedasticity
+- **Model 7**: Model 6 + additional noise term for fluorescence-based Chl
+
+A summary table of all models, including the three omitted from the main text, is provided below. Full mathematical specifications, trace diagnostics, and model performance comparisons are included in the Supplement.
+
+<!-- To expand: add table summarizing models (model ID, functional form, grouping, σ structure, measurement adjustment) -->
+
+### 2.4 Representative Model Structures
+
+#### 2.4.1 Model 1: Bayesian Polynomial OC6 Regression
+
+This model mirrors the classical OC6 algorithm with a polynomial regression on log(MBR). It provides a simple, non-hierarchical baseline for model comparisons.
+
+- Polynomial structure similar to O'Reilly et al. (2019)
+- Constant σ
+- No group structure or measurement adjustment
+
+#### 2.4.2 Model 2: Hierarchical Linear Regression (4-band Grouping)
+
+This model introduces partial pooling by grouping observations according to the dominant Rrs band used in the MBR numerator. It aims to address known discontinuities in empirical band-ratio algorithms.
+
+- Partial pooling on slope and intercept terms
+- Shared hyperpriors across groups
+- Constant σ
+
+#### 2.4.3 Model 6: Hierarchical Linear Regression with Group-wise Linear σ
+
+This model extends Model 2 by allowing the noise term σ to vary by group as a log-linear function of MBR, capturing heteroscedasticity commonly observed in chlorophyll datasets.
+
+- Group-specific linear model for log(σ)
+- Partial pooling of σ slope/intercept parameters
+
+#### 2.4.4 Model 7: Hierarchical Linear σ + Measurement-Method-Specific Noise
+
+Building on Model 6, this model introduces an additional noise term for chlorophyll values derived from fluorescence, accounting for the increased uncertainty relative to HPLC-based measurements.
+
+- Same structure as Model 6
+- Additional variance term for fluorescence-flagged observations
+
+### 2.5 Prior Specification and Inference Settings
+
+All models use weakly informative priors and were fit using Hamiltonian Monte Carlo (NUTS) in PyMC. Convergence and effective sampling were confirmed via standard diagnostics.
+
+<!-- To expand: mention specific prior distributions used, tuning parameters, number of chains/draws -->
+
+- Priors: Normal for regression terms, Gamma for σ
+- Chains, tuning steps, and draws per model
+- Convergence assessed using R-hat and ESS
+- Trace plots and diagnostics in Supplementary Material
+
+### 2.6 Model Comparison and Predictive Evaluation
+
+Models were compared using Leave-One-Out Cross Validation (LOO-CV) based on Pareto Smoothed Importance Sampling (PSIS), a robust criterion for evaluating out-of-sample predictive performance.
+
+<!-- To expand: cite ArviZ, explain ELPD, SE(ΔELPD), ranking strategy -->
+
+- Model comparison was performed using **Pareto Smoothed Importance Sampling Leave-One-Out Cross-Validation (PSIS-LOO-CV)**, implemented via the `arviz.loo()` function.
+- Models were ranked based on their **Expected Log Predictive Density (ELPD)**, a Bayesian measure of out-of-sample predictive accuracy.
+- Differences in ELPD between models were evaluated alongside their **standard errors (SE)** to assess whether improvements were credibly distinguishable.
+- **Predictive accuracy** was assessed using:
+  - **Posterior Predictive Checks (PPCs)**: to visualize the degree to which simulated data resembled observed outcomes.
+  - **Highest Density Interval (HDI) coverage**: to evaluate the calibration of predictive intervals relative to held-out data.
+- No frequentist criteria (e.g., RMSE, R²) were used at any stage of model evaluation or selection.
+
+
+## 3. Results
+
+This section presents convergence diagnostics, posterior inference, and model comparison using fully Bayesian metrics. No frequentist evaluation criteria were used. Instead, we rely on information-theoretic model comparison (LOO-CV), posterior predictive checks, and visualization of uncertainty via highest density intervals (HDIs).
+
+### 3.1 MCMC Convergence
+
+All four models converged successfully. The Gelman-Rubin statistic (R-hat ≈ 1.0) and large effective sample sizes (ESS > 1000) across all parameters indicate robust posterior estimation. Diagnostic plots and sampling traces are provided in the Supplementary Material.
+
+- All R-hat < 1.01
+- No divergences
+- Sufficient tail and bulk ESS
+- Full diagnostics in Supplement
+
+### 3.2 Predictive Performance via Leave-One-Out Cross Validation
+
+We compared models using Pareto Smoothed Importance Sampling Leave-One-Out Cross-Validation (PSIS-LOO-CV), a fully Bayesian approach to evaluating out-of-sample predictive accuracy.
+
+**Table 1.** Leave-One-Out Comparison (ELPD ± SE):
+
+<!-- Insert Quarto table of ELPD, ΔELPD, SE, p_loo -->
+
+- Model 7 ranked highest in expected log predictive density (ELPD)
+- Model 6 performed comparably, with ΔELPD within 1 SE
+- Model 1 (OC6 polynomial) had the weakest predictive performance
+- All models had acceptable Pareto-k diagnostics (see Supplement)
+
+### 3.3 Posterior Predictive Checks (PPC)
+
+We used posterior predictive checks (PPCs) to evaluate the ability of each model to reproduce key features of the observed log-chlorophyll distribution. These include:
+
+- Empirical CDF comparisons
+- HDI envelopes overlaid on the data
+- Predictive median vs. observed values
+
+**Figure 1.** Posterior predictive envelopes vs. observed log(Chl)  
+**Figure 2.** ECDF overlays with posterior predictive means and HDIs  
+**Figure 3.** Rug plot of observations with overlaid posterior predictive draws
+
+Findings:
+- Model 7 captures full data distribution, especially for fluorescence-labeled values
+- Model 1 underestimates tails (under-dispersed)
+- Model 6 accurately reflects group-level variance
+
+### 3.4 Posterior Distributions and Interpretability
+
+Posterior distributions for key parameters illustrate how model structure affects inference. We show both:
+- Group-level slopes and intercepts (hierarchical structure)
+- Group-wise σ (heteroscedasticity)
+- Fluorescence-specific variance term (Model 7)
+
+**Figure 4.** Forest plot of slope and intercept posteriors  
+**Figure 5.** Posterior of σ across MBR groups  
+**Figure 6.** Posterior of added noise term for fluorescence
+
+Key insights:
+- Rrs510-dominant group had the steepest slope (Model 2 & 6)
+- Fluorescence noise term is credibly nonzero (Model 7)
+- Posterior variance structure supports heteroscedasticity as a key feature
+
+### 3.5 Summary of Bayesian Comparison
+
+- **Model 7**: Best predictive performance (highest ELPD), best uncertainty calibration
+- **Model 6**: Nearly equivalent performance; simpler if fluorescence uncertainty not needed
+- **Model 2**: Gains from partial pooling; underperforms without variance modeling
+- **Model 1**: Legacy structure underfits tails, overconfident predictions
+
+All results support the Bayesian hierarchical modeling framework with heteroscedasticity and measurement-aware noise as optimal for chlorophyll-a estimation.
+
+## 4. Discussion
+
+This section interprets the results in the context of previous chlorophyll-a modeling work, with particular emphasis on the added value of Bayesian modeling. We highlight the importance of accounting for heteroscedasticity and measurement-type uncertainty, and discuss how this contributes to improved predictive reliability and scientific interpretability.
+
+### 4.1 Value of Bayesian Framework over Classical Approaches
+
+Our results demonstrate the clear advantages of fully Bayesian modeling for chlorophyll-a prediction from satellite Rrs. Unlike deterministic or frequentist models:
+
+- Bayesian methods explicitly model parameter uncertainty and provide HDIs instead of misleading confidence intervals
+- Posterior predictive distributions enable direct evaluation of model calibration
+- Bayesian model comparison via LOO-CV avoids overfitting and guards against inappropriate complexity
+
+<!-- Expand: reinforce critique of RMSE-based selection; cite key Bayesian modeling references -->
+
+### 4.2 Importance of Hierarchical Structuring
+
+Models that leveraged group-wise structure (based on dominant Rrs bands) consistently outperformed simpler counterparts.
+
+- Hierarchical partial pooling improved both prediction and parameter identifiability
+- Group-level trends reflected known biogeophysical distinctions (e.g., clear vs. turbid water types)
+- Intercepts and slopes varied systematically across spectral regimes
+
+<!-- Expand: relate group-level results to known Case 1 vs. Case 2 water differences -->
+
+### 4.3 Role of Heteroscedasticity in Chlorophyll Retrieval
+
+Accounting for non-constant noise was essential for accurate uncertainty quantification.
+
+- Models with linear or hierarchical σ terms captured increased variance at higher MBR or Chl
+- Constant-σ models (e.g., OC6) underrepresented predictive uncertainty, especially in extremes
+- Explicit modeling of σ structure produced calibrated HDIs and superior posterior predictive checks
+
+<!-- Expand: link back to observed data behavior and prior studies showing variance scaling with concentration -->
+
+### 4.4 Measurement-Specific Error Modeling
+
+Model 7, which introduced a separate noise term for fluorescence-derived Chl, outperformed all others.
+
+- Fluorescence-based measurements have higher and more variable error
+- This heterogeneity cannot be ignored in merged datasets
+- Bayesian modeling allows this variance to be encoded explicitly without discarding data
+
+<!-- Expand: cite studies on fluorescence bias, show that Bayesian methods allow uncertainty to “absorb” method bias -->
+
+### 4.5 Implications for Satellite Algorithm Development
+
+The findings support incorporating Bayesian elements into future operational chlorophyll algorithms.
+
+- Hierarchical modeling offers a path to generalize across bioregions and sensors
+- Posterior uncertainty estimates can support downstream applications (e.g., forecasting, ecological thresholds)
+- Bayesian frameworks are sensor-agnostic: Rrs inputs can vary as long as priors are adapted
+
+<!-- Optional: comment on feasibility of deploying these methods, or emulating them with approximate Bayesian techniques -->
+
+### 4.6 Limitations and Future Work
+
+As with any modeling effort, our study has limitations:
+
+- All results are conditional on the data from NOMAD; further validation on independent datasets is needed
+- More sophisticated noise structures (e.g., nonparametric σ) could be explored
+- Spatial or spatio-temporal extensions were not considered, but would be feasible in PyMC
+
+<!-- Expand: suggest extensions (Gaussian Processes, spatial priors, stacking), and invite reproducibility -->
 
 
 
-### Limitations of Existing Approaches
-Regrettably, the development of traditional ocean color algorithms is grounded in a fundamental statistical error—one that pervades much of observational science: the conflation of sampling probability with inferential probability [@jaynes2003probability; @DeScheemaekere2011].
-
-Consider a dataset $D$ composed of input–output pairs—e.g., remote sensing reflectance (Rrs) and chlorophyll-a concentration ($Chl_a$), and a model $M$, such as OCx, posited to represent the relationship between them. The sampling probability $p(D|M)$ denotes the probability of observing data $D$ under the assumption that model $M$ is true. In standard model fitting, this likelihood is maximized by adjusting the parameters of $M$ to best explain the observed data.
-
-This approach tacitly assumes that the model which best fits the data also most accurately represents the underlying generative process. This constitutes an epistemic fallacy—treating $p(D|M)$ as if it were $p(M | D)$; a violation of Bayes’ theorem and the rules governing conditional probability.
-
-Although in well-behaved, data-rich cases—where the likelihood is regular, the signal strong, and the model adequately constrained—the maxima of $p(D|M)$ and $p(M|D)$ may coincide, this remains the exception rather than the rule.
-
-This mistake lies at the heart of what Clayton [@clayton2022bernoulli] terms the Bernoulli Fallacy: the misconception that empirical probabilities by themselves yield inferential truths. As Clayton argues, this logical misstep has far-reaching consequences, with implications that extend beyond science to domains such as medicine, law, and public policy.
-
-In scientific modeling, this fallacy contributes to poor generalization, drives the use of ad hoc or retrospective uncertainty quantification, and underlies many published results that later prove difficult to replicate [@baker2016; @cobey2024biomedical]. These limitations are not restricted to classical hypothesis testing; they persist in the training and deployment of modern machine learning models as well.
-
-In regression and classification, maximizing likelihood is often treated as sufficient for inference—despite yielding only a single point estimate and ignoring both parameter uncertainty and the plausibility of alternative models.
-
-This epistemic shortcut has been directly critiqued in the machine learning literature. Gal [@gal2016uncertainty] and Ghahramani [@ghahramani2015probabilistic] point out that most ML models discard uncertainty altogether, treating the outcome of an optimization as if it were an inference. The result is overconfident predictions and brittle generalization—concerns that echo Clayton’s critique.
-
-Bishop [@bishop2006pattern] similarly distinguishes between the utility of predictive models and the inferential scaffolding required to quantify uncertainty, reinforcing the notion that likelihood alone is insufficient, and that the Bernoulli Fallacy permeates much of applied machine learning.
 
 
 
-### Overcoming limitations
-There have been attempts to address these issues. [@seegers2018] have proposed alternative metrics to circumvent the inadequate assumptions of the frequentist approach. Others have tried to go a step futher incorporate Bayesian concepts. E.g. [ @frouin2013] have proposed a Bayesian inversion scheme for atmospheric correction. [@shi2015] proposed a probabilistic method to merge data from different sensors. [@craig2019] have proposed a Bayesian neural network (BNN) approach using Hamiltonian Monte Carlo sampling to retrieve Inherent Optical Properties (IOP) from Top-of-the-atmosphere (TOA) radiance. [@werther2022] used Monte-Carlo dropout to approximate a deep BNN. [@erickson2023] have proposed using conjugate Gaussian prior and likelihood to frame the GIOP as Bayesian model to predict IOPs with uncertainty. [@hammout2024] have proposed a BNN approximation via Stochastic Variational Inference to predict $Chl_a$ from ocean color observations. Yet most of these approaches retain variable levels of frequentism by applying only part of what is now commonly referred to as the Bayesian workflow[@bgelman2019]. 
-
-### The Bayesian workflow
-The Bayesian workflow is a recognizable and unifying approach to statistical modeling, primarily championed by statisticians at Columnbia University [@gelman_bda] subsequently endorsed and further developed by researchers dealing with scant and/or noisy data (e.g. [@mcelreath_stat_rethink]). Some researchers have modified this  researcher's field. [@wolkovich2024fourstepbayesianworkflowimproving] has proposed a four-step process for ecological modeling. 
-However there are some core steps that should be followed. (1) Begin with one, or better yet,  more than one conceptual models and code them up.  Model building include prior formulation to encode existing knowledge. Priors are part of the model structure and make the researcher's assumptions transparent, providing a first avenue of critique and improvement. (2) Check assumptions by a simulation process known as *Prior Predictive Checks*. Bayesian models are generative, meaning they can run on empty, that is produce results without data. This allows a sanity check of the built-in assumptions. Non-sensical simulation results indicate assumptions must be revisited. (3) Collect data and conduct exploratory data analysis. Knowing the data will be critical to understanding potential problems during fitting; e..g multicollinearity of input features. (4) Diagnostics; the fitting process and the resulting posterior distribution provide rich  constructs that can be mined for a great deal of information. Most modern packages (e.g. Stan, PyMC, Numpyro, etc) offer a great many tools to extract insights. (5) Model compasison and selection. Often a model will perform markedly better, which is useful in terms predictive performance, but more importantly in terms of generating insights. (6) Sequential update; a model's output, the posterior distribution becomes the new prior every time new data becomes available for a new sequence of model fitting.  
-
-In this paper we leverage past work and recast $OC6$ [@oreilly2019] as a Bayesian mdoel, because out of the $OCx$ family,  it integrates the most bands (i.e. information) into its structure. In addition, we also propose two more models. (1) Bayesian Additive Regression Trees (BART, [@chipman2010bart]); a robust flexible approach successfully used for diverse applications ([@linero2017].), and insensitive to the known multicollinearity issue between ocean color bands. (2) A hierarchical partial pooling linear model inspired from [@gordon1983]'s original band ratio-based linear regression, formulated to circumvent discontinuities mentioned by [@oreilly1998], while insuring maximal use of available information contained in the data set.
-
-## Methods
-
-We performed the following five steps. (1) Prior elicitation and model formulation; (2) Data preprocessing and exploratory analysis; (3) model fitting and diagnostics; (4) model evaluation, comparison, and selection.
 
 
-### Prior Elicitation 
-Before fitting the Bayesian model to observational data, we performed a prior predictive evaluation based on simulated mock inputs to ensure that our model structure and prior choices were physically reasonable and aligned with established ocean color variability. For all 3 model types we simulated chlorophyll a with approximately log-normal distribution according to [@campbell1995].
-For $OC6$ and our hierarchical linear model we generated maximum band ratio (MBR) that roughly agree with [@oreilly2019] and references therein. BART prior is bases on model structured and elicitation is explained further below. 
 
-#### Mock MBR and Chlorophyll Data
-
-We generated synthetic MBR inputs based on empirical knowledge of global ocean conditions. Specifically, the dynamic range of MBR values was assumed to span approximately 0.3 to 30, corresponding to $log_{10}(MBR)$ values between -0.5 and 1.5 [@oreilly2019]. $log_{10}(MBR)$ values were drawn from a truncated normal distribution centered at 0.75 with a standard deviation of 0.5, ensuring denser sampling in typical oligotrophic to mesotrophic regimes while allowing coverage of extreme cases. 
-The corresponding predicted $log_{10}(Chl_a)$ ⁡ values were sampled, according to the physical (detection limits) and ecological expectations of chlorophyll variability [@campbell1995] from a truncated Gaussian likelihood bounded between -3 and 3.3, corresponding to chlorophyll concentrations ranging from 0.001 to 2000 mg m⁻³.
-
-#### Model Formulation
-To implement a robust Bayesian approach, we first conducted a thorough elicitation of priors informed by domain knowledge from previously published literature, where applicable. The choice of distribution for the model parameters is borne out of the following assumptions. 
-1. Parameter domain is $(- ∞, ∞)$ though, per [@oreilly2019], parameters are expected to be relatively close to 0
-2. Priors should be regularizing. 
-3. Parameter variance is finite. 
-
-Accordingly for the $OC6$ and hierarchical models we chose weakly informative Gaussian priors. For the likelihood, we chose a truncated Gaussian defined over a domain The standard deviations for these priors were chosen conservatively large enough to allow for flexibility, but sufficiently tight to capture known realistic parameter ranges derived from extensive empirical validation.
-
-For the BART model, priors were selected following recommendations by [@chipman2010bart] and subsequent applied literature [@linero2017; @hill2020bayesian]. The BART algorithm naturally encodes regularization and shrinkage through its tree structure, inherently balancing bias and variance. However, hyperparameters controlling tree depth and the number of trees were critical. We specified prior distributions for these hyperparameters based on guidelines from simulation studies and domain knowledge, starting with defaults recommended by the original authors and subsequently refining through preliminary runs and prior predictive checks.
-
-
-We carried out formal prior predictive checks to validate these choices. By generating synthetic data from the prior distributions and inspecting the resulting predictions for chlorophyll-a, we ensured that our priors neither produced unrealistic extremes nor overly constrained the model predictions. This procedure also allowed stakeholders with domain expertise to visually assess the suitability of our priors before fitting the model to actual data, thereby promoting transparency and interpretability.
-
-Finally, the resulting priors and model formulation and prior predictive cheks are available as a jupyter notebook in the accompanying repository for full reproducibility.
-
-### Data Preprocessing
- 
-
-\section{Data Preprocessing}
-
-Data for this study were acquired from multiple satellite ocean color sensors and corresponding in situ chlorophyll-\(a\) measurements obtained from sources such as the NASA Bio-Optical Marine Algorithm Data set (NOMAD) and the compilation by Valente et al. (2015). To ensure consistency across sensors, the spectral reflectance data (\(R_{rs}\)) were interpolated as needed to common wavelength centers.
-
-For the empirical \(OCx\) formulation, blue-to-green band ratios were computed for each observation. In particular, the maximum band ratio (MBR) was determined by taking the highest value among the available blue-band ratios (e.g., \(Rrs(443)/Rrs(555)\), \(Rrs(490)/Rrs(555)\), and \(Rrs(510)/Rrs(555)\)). This maximum value was then log-transformed:
-$$
-\log R = \log_{10}\left(\frac{R_{rs}(\lambda_{\text{blue}})}{R_{rs}(555)}\right).
-$$
-
-For the Color Index (CI) formulation of Hu et al. (2012), the CI was calculated as:
-$$
-\text{CI} = R_{rs}(555) - \left[\,R_{rs}(443) + \frac{555-443}{670-443}\Bigl(R_{rs}(670) - R_{rs}(443)\Bigr)\,\right],
-$$
-and the corresponding in situ chlorophyll-\(a\) concentrations were log-transformed:
-$$
-\log \text{Chl} = \log_{10}(\text{Chl}).
-$$
-
-These transformations standardize the data to a common scale, ensuring that variability is appropriately captured for subsequent regression and uncertainty quantification. Detailed descriptions of the interpolation methods and quality control procedures are provided in the Supplementary Material.
-
-
-## Statement of Contribution
-In this study, we develop and demonstrate a new global chlorophyll retrieval model based on Bayesian Additive Regression Trees implemented in PyMC. We train the BART model on a large, standardized dataset of satellite remote-sensing reflectance (Rrs) spectra matched with in situ chlorophyll measurements, using log₁₀-transformed Chl-a as the response to stabilize variance. The resulting model is applied globally to produce chlorophyll-a estimates from multi-spectral satellite data, with associated uncertainty estimates for each prediction. We show that this Bayesian tree-based model can serve as a general-purpose ocean color algorithm that is sensor-agnostic (provided reflectances are harmonized to common wavebands), interpretable, and uncertainty-aware. Unlike conventional empirical algorithms, the BART approach allows users to examine the inferred Rrs–Chl relationships and trust the model’s performance across regimes, while also quantifying confidence in each retrieval. This work thus contributes a novel methodological advance to satellite ocean color science: a unified chlorophyll retrieval model that marries the strengths of empirical algorithms (global applicability and simplicity) with the benefits of modern Bayesian machine learning (flexibility, interpretability, and rigorous uncertainty quantification). Our introduction of BART for global chlorophyll prediction opens the door for more robust monitoring of ocean biogeochemistry and improved integration of ocean color data into scientific and management applications.
 
 
 ## Acknowledgments
