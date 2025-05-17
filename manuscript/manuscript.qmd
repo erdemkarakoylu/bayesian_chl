@@ -74,112 +74,142 @@ Bishop [@bishop2006pattern] similarly distinguishes between the utility of predi
 
 ### Overcoming limitations 
 
-There have been attempts to address these issues. [@seegers2018] have proposed alternative metrics to circumvent the inadequate assumptions of the frequentist approach. Others have tried to go a step futher incorporate Bayesian concepts. E.g. [ @frouin2013] have proposed a Bayesian inversion scheme for atmospheric correction. [@shi2015] proposed a probabilistic method to merge data from different sensors. [@craig2019] have proposed a Bayesian neural network (BNN) approach using Hamiltonian Monte Carlo sampling to retrieve Inherent Optical Properties (IOP) from Top-of-the-atmosphere (TOA) radiance. [@werther2022] used Monte-Carlo dropout to approximate a deep BNN. [@erickson2023] have proposed using conjugate Gaussian prior and likelihood to frame the GIOP as Bayesian model to predict IOPs with uncertainty. [@hammout2024] have proposed a BNN approximation via Stochastic Variational Inference to predict $Chl_a$ from ocean color observations. Yet most of these approaches retain variable levels of frequentism by applying only part of what is now commonly referred to as the Bayesian workflow[@bgelman2019]. 
+Several recent efforts have attempted to address the limitations of classical retrieval models. For instance, [@seegers2018] proposed alternative evaluation metrics to move beyond restrictive frequentist assumptions. Others have incorporated Bayesian elements into the modeling pipeline: [@frouin2013] applied Bayesian inversion for atmospheric correction, [@shi2015] used probabilistic fusion for multi-sensor data, and [@craig2019] employed Hamiltonian Monte Carlo to train Bayesian neural networks (BNNs) for retrieving inherent optical properties (IOPs) from top-of-atmosphere radiance. Similarly, [@werther2022] introduced Monte Carlo dropout as an approximate BNN strategy, while [@erickson2023] recast the Generalized Inherent Optical Property (GIOP) framework using conjugate Bayesian linear models. Most recently, [@hammout2024] developed a BNN surrogate using stochastic variational inference for chlorophyll-a prediction from Rrs.
 
-### In search of our Bayesian workflow
-The Bayesian workflow is a recognizable and unifying way of approaching statistical modeling, initially championed by statisticians at Columnbia University [@gelman_bda] subsequently quick endorsed and further developed by researchers dealing with scant and noisy data (e.g. [@mcelreath_stat_rethink]). That is not to say that all steps are applicable to all fields of research and all intents. The workflow can and should be tailored to the researcher's field. [@wolkovich2024fourstepbayesianworkflowimproving] has proposed a four-step process for Ecological modeling. 
-However there are some core steps that should be followed. (1) Begin with one, or better yet,  more than one conceptual models and code them up.  Model building include prior formulation to encode existing knowledge. Priors are part of the model structure and make the researcher's assumptions transparent, providing a first avenue of critique and improvement. (2) Check assumptions by a simulation process known as *Prior Predictive Checks*. Bayesian models are generative, meaning they can run on empty, that is produce results without data. This allows a sanity check of the built-in assumptions. Non-sensical simulation results indicate assumptions must be revisited. (3) Collect data and conduct exploratory data analysis. Knowing the data will be critical to understanding potential problems during fitting; e..g multicollinearity of input features. (4) Diagnostics; the fitting process and the resulting posterior distribution provide rich  constructs that can be mined for a great deal of information. Most modern packages (e.g. Stan, PyMC, Numpyro, etc) offer a great many tools to extract insights. (5) Model compasison and selection. Often a model will perform markedly better, which is useful in terms predictive performance, but more importantly in terms of generating insights. (6) Sequential update; a model's output, the posterior distribution becomes the new prior every time new data becomes available for a new sequence of model fitting.  
+While these studies mark important progress, they often adopt only isolated components of what has come to be known as the Bayesian workflow [@bgelman2019]. Key aspects—such as principled prior specification, posterior predictive checking, and formal model comparison—remain largely absent. As a result, uncertainty is frequently approximated rather than inferred, and model structure is rarely treated as a variable to be interrogated.
 
-In this paper we leverage past work but also propose new approaches for predicting chlorophyll from sea surface reflectance (Rrs). Overall we propose three types of models. 
+This paper builds on prior work and extends it by applying a fully Bayesian modeling framework for chlorophyll-a prediction from sea surface reflectance (Rrs), with explicit treatment of uncertainty, model complexity, and measurement error.
 
 ## 2. Materials and Methods
 
-This section outlines the study region and dataset used for model development and validation, the structure and rationale for the Bayesian models, and the approach used to compare their predictive performance. We emphasize a subset of four representative models in the main text, while full specifications and results for all seven models are provided in the Supplementary Material.
+This section outlines the dataset, model structures, inference methods, and model evaluation criteria used in this study. I focus on a fully Bayesian approach to modeling chlorophyll-a from satellite remote sensing reflectance (Rrs), emphasizing transparency, uncertainty quantification, and principled model comparison. Four representative models are presented in the main text, while all seven model formulations and results are included in the Supplement.
 
 ### 2.1 Study Area and Dataset
 
-We used satellite and in situ data from the NOMAD v2 (2008) dataset to train and validate chlorophyll-a prediction models based on remote sensing reflectance (Rrs). Detailed preprocessing and matching procedures were applied to ensure high-quality paired observations suitable for statistical modeling.
+I used the NOMAD v2 (2008) dataset, which includes quality-controlled in situ measurements of chlorophyll-a matched with coincident satellite Rrs data. These measurements span a range of oceanographic conditions, enabling the development of models that generalize across water types.
 
-<!-- To expand: summarize geographic scope if applicable, temporal resolution, types of chlorophyll measurements, sensor bands used -->
+To prepare the data:
 
-- NOMAD v2 dataset: in situ measurements and coincident satellite Rrs
-- Removal of invalid or zero Rrs values
-- Computation of Max Band Ratio (MBR)
-- log-transformation of chlorophyll and MBR
-- Creation of group labels based on spectral dominance
-- Measurement method labels (fluorescence vs. HPLC)
+- **Chlorophyll-a**:  
+  - Measurements obtained using both HPLC and fluorescence methods  
+  - Combined into a single log-transformed target variable (log₁₀ Chl)  
+  - A binary flag identifies the measurement method for each sample  
+
+- **Remote sensing reflectance (Rrs)**:  
+  - Rrs values equal to zero were excluded  
+  - A derived feature, the Maximum Band Ratio (MBR), was computed as:  
+    - Numerator: max(Rrs411, Rrs443, Rrs489, Rrs510)  
+    - Denominator: Rrs555 + Rrs670  
+  - MBR was log-transformed to create the primary input variable  
+
+- **Grouping and flags**:  
+  - A categorical variable (`MBR_flag`) was used to indicate the dominant Rrs band used in the MBR numerator  
+  - This grouping informed partial pooling structures in hierarchical models  
 
 ### 2.2 Bayesian Modeling Framework
 
-We adopt a Bayesian approach to flexibly capture the relationship between log-transformed MBR and log-transformed chlorophyll-a. Bayesian inference allows us to quantify uncertainty, incorporate prior knowledge, and rigorously compare alternative model structures using probabilistic criteria.
+All models were implemented in PyMC v5 and estimated using Hamiltonian Monte Carlo with the No-U-Turn Sampler (NUTS). I modeled log-transformed chlorophyll-a as a function of log-transformed MBR, using a truncated normal likelihood to ensure predictions remained within physically plausible bounds.
 
-<!-- To expand: cite PyMC, mention benefits of full posterior inference, prior predictive checking, model flexibility -->
+Key components of the modeling framework include:
 
-- Inference implemented using PyMC v5
-- Models specified using a Truncated Normal likelihood
-- Noise term (σ) modeled with increasing complexity
-- Priors: weakly informative Normal for regression terms; Gamma for σ
+- **Likelihood**:  
+  - Truncated normal with support between –3.0 and 3.2 (log₁₀ Chl)  
+
+- **Noise structure** (`σ`):  
+  - Varied across models, with increasing structural complexity  
+  - Some models use constant σ; others include heteroscedastic or hierarchical formulations  
+
+- **Priors**:  
+  - Weakly informative priors were used throughout  
+  - Regression coefficients received Normal priors  
+  - All σ terms were modeled with Gamma distributions, allowing flexible but strictly positive support  
+
+- **Software**:  
+  - PyMC for model specification and inference  
+  - ArviZ for posterior diagnostics, posterior predictive checks, and model comparison  
 
 ### 2.3 Overview of Candidate Models
 
-We developed seven Bayesian models of increasing complexity. These models vary in terms of functional form (polynomial vs. linear), structure (flat vs. hierarchical), error formulation (constant vs. heteroscedastic), and treatment of measurement-specific noise.
+I developed seven Bayesian models representing a progression of modeling complexity and assumptions:
 
-For brevity and clarity, we present four representative models in the main text:
-- **Model 1**: Polynomial regression (Bayesian OC6)
-- **Model 2**: Hierarchical linear regression grouped by Rrs band
-- **Model 6**: Hierarchical linear regression with group-wise heteroscedasticity
-- **Model 7**: Model 6 + additional noise term for fluorescence-based Chl
+- **Model 1**: Polynomial regression (Bayesian OC6-style baseline)  
+- **Model 2**: Hierarchical linear regression, grouped by dominant MBR numerator band  
+- **Model 3**: Hierarchical linear regression extended to include all Rrs spectral dominance groups  
+- **Model 4**: Model 2 with group-specific constant σ  
+- **Model 5**: Global linear heteroscedastic model  
+- **Model 6**: Model 2 with group-wise linear heteroscedasticity  
+- **Model 7**: Model 6 plus an added dispersion term for fluorescence-based measurements  
 
-A summary table of all models, including the three omitted from the main text, is provided below. Full mathematical specifications, trace diagnostics, and model performance comparisons are included in the Supplement.
-
-<!-- To expand: add table summarizing models (model ID, functional form, grouping, σ structure, measurement adjustment) -->
+The main text focuses on Models 1, 2, 6, and 7, which span the range of key structural variations. Full equations, priors, and diagnostic results for all models are provided in the Supplement.
 
 ### 2.4 Representative Model Structures
 
 #### 2.4.1 Model 1: Bayesian Polynomial OC6 Regression
 
-This model mirrors the classical OC6 algorithm with a polynomial regression on log(MBR). It provides a simple, non-hierarchical baseline for model comparisons.
+This model follows the OC6 formulation proposed by O’Reilly et al. (2019), adapted to a Bayesian framework. It uses a fourth-order polynomial in log(MBR) to estimate log(Chl).
 
-- Polynomial structure similar to O'Reilly et al. (2019)
-- Constant σ
-- No group structure or measurement adjustment
+- No grouping or partial pooling  
+- Constant noise term σ shared across all observations  
+- Gamma prior placed on σ  
 
 #### 2.4.2 Model 2: Hierarchical Linear Regression (4-band Grouping)
 
-This model introduces partial pooling by grouping observations according to the dominant Rrs band used in the MBR numerator. It aims to address known discontinuities in empirical band-ratio algorithms.
+This model introduces partial pooling across four groups defined by the dominant MBR numerator band. Each group receives its own slope and intercept, with shared hyperpriors.
 
-- Partial pooling on slope and intercept terms
-- Shared hyperpriors across groups
-- Constant σ
+- Grouping: Rrs411, Rrs443, Rrs489, Rrs510  
+- Partial pooling via shared hyperpriors  
+- Constant σ across all groups  
 
 #### 2.4.3 Model 6: Hierarchical Linear Regression with Group-wise Linear σ
 
-This model extends Model 2 by allowing the noise term σ to vary by group as a log-linear function of MBR, capturing heteroscedasticity commonly observed in chlorophyll datasets.
+To accommodate heteroscedasticity, this model allows σ to vary with log(MBR) within each group, modeled as a log-linear relationship. Parameters are estimated hierarchically across groups.
 
-- Group-specific linear model for log(σ)
-- Partial pooling of σ slope/intercept parameters
+- log(σ) = α + β × log(MBR), with group-specific α and β  
+- Transformed via exp(log(σ))  
+- Partial pooling of σ slope/intercept terms  
 
-#### 2.4.4 Model 7: Hierarchical Linear σ + Measurement-Method-Specific Noise
+#### 2.4.4 Model 7: Hierarchical Linear σ + Measurement-Specific Dispersion
 
-Building on Model 6, this model introduces an additional noise term for chlorophyll values derived from fluorescence, accounting for the increased uncertainty relative to HPLC-based measurements.
+This model adds a measurement-method-specific dispersion term to the structure of Model 6, capturing the known increase in variability associated with fluorescence-based chlorophyll estimates.
 
-- Same structure as Model 6
-- Additional variance term for fluorescence-flagged observations
+- Additional noise component applied when chl_flag = fluorescence  
+- All other structure inherited from Model 6  
 
 ### 2.5 Prior Specification and Inference Settings
 
-All models use weakly informative priors and were fit using Hamiltonian Monte Carlo (NUTS) in PyMC. Convergence and effective sampling were confirmed via standard diagnostics.
+I used weakly informative priors across all models to balance flexibility and regularization:
 
-<!-- To expand: mention specific prior distributions used, tuning parameters, number of chains/draws -->
+- **Regression terms**: Normal(0, 1) unless otherwise stated  
+- **Hyperpriors**: Normal and HalfNormal for hierarchical parameters  
+- **Noise terms** (`σ`): Gamma(γ, φ), chosen to reflect plausible dispersion values  
 
-- Priors: Normal for regression terms, Gamma for σ
-- Chains, tuning steps, and draws per model
-- Convergence assessed using R-hat and ESS
-- Trace plots and diagnostics in Supplementary Material
+Inference was conducted using:
+
+- 4 chains per model  
+- 1000–1500 tuning steps  
+- ≥2000 posterior samples per chain  
+
+I assessed convergence using R-hat (target < 1.01) and effective sample size (ESS > 1000). Full trace plots and diagnostics are included in the Supplement.
 
 ### 2.6 Model Comparison and Predictive Evaluation
 
-Models were compared using Leave-One-Out Cross Validation (LOO-CV) based on Pareto Smoothed Importance Sampling (PSIS), a robust criterion for evaluating out-of-sample predictive performance.
+I compared model performance using **Pareto Smoothed Importance Sampling Leave-One-Out Cross-Validation (PSIS-LOO-CV)**, implemented via the `arviz.loo()` function. This Bayesian metric estimates the expected log predictive density (ELPD), a principled measure of out-of-sample predictive accuracy.
 
-<!-- To expand: cite ArviZ, explain ELPD, SE(ΔELPD), ranking strategy -->
+- Models were ranked by ELPD  
+- ΔELPD values were interpreted relative to their standard errors  
+- Pareto-k diagnostics confirmed LOO reliability (full table in Supplement)  
 
-- Model comparison was performed using **Pareto Smoothed Importance Sampling Leave-One-Out Cross-Validation (PSIS-LOO-CV)**, implemented via the `arviz.loo()` function.
-- Models were ranked based on their **Expected Log Predictive Density (ELPD)**, a Bayesian measure of out-of-sample predictive accuracy.
-- Differences in ELPD between models were evaluated alongside their **standard errors (SE)** to assess whether improvements were credibly distinguishable.
-- **Predictive accuracy** was assessed using:
-  - **Posterior Predictive Checks (PPCs)**: to visualize the degree to which simulated data resembled observed outcomes.
-  - **Highest Density Interval (HDI) coverage**: to evaluate the calibration of predictive intervals relative to held-out data.
-- No frequentist criteria (e.g., RMSE, R²) were used at any stage of model evaluation or selection.
+I evaluated predictive accuracy and calibration using:
+
+- **Posterior Predictive Checks (PPCs)**:  
+  - Simulated draws overlaid on observed distributions  
+  - Empirical CDF comparisons and interval coverage  
+
+- **HDI coverage**:  
+  - Fraction of observed values falling within 95% posterior predictive intervals  
+
+No frequentist evaluation criteria such as RMSE, MAE, or R² were used at any stage as these do not make sense in this context where for each observations, a probability distribution of the prediction is produced.
+
 
 
 ## 3. Results
