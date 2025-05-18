@@ -35,7 +35,7 @@ bibliography: references.bib
 citation:
   container-title: Geophysical Research Letters
 keep-tex: true
-number-sections: false
+number-sections: true
 date: last-modified
 ---
 
@@ -80,13 +80,14 @@ While these studies mark important progress, they often adopt only isolated comp
 
 This paper builds on prior work and extends it by applying a fully Bayesian modeling framework for chlorophyll-a prediction from sea surface reflectance (Rrs), with explicit treatment of uncertainty, model complexity, and measurement error.
 
+
 ## 2. Materials and Methods
 
 This section outlines the dataset, model structures, inference methods, and model evaluation criteria used in this study. I focus on a fully Bayesian approach to modeling chlorophyll-a from satellite remote sensing reflectance (Rrs), emphasizing transparency, uncertainty quantification, and principled model comparison. Four representative models are presented in the main text, while all seven model formulations and results are included in the Supplement.
 
 ### 2.1 Study Area and Dataset
 
-I used the NOMAD v2 (2008) dataset, which includes quality-controlled in situ measurements of chlorophyll-a matched with coincident satellite Rrs data. These measurements span a range of oceanographic conditions, enabling the development of models that generalize across water types.
+For pedagogical reasons, I used the well known NOMAD [@werdell2005improved] dataset, which includes quality-controlled in situ measurements of chlorophyll-a matched with coincident satellite Rrs data. These measurements span a range of oceanographic conditions, enabling the development of models that generalize across water types. Sea-surface reflectances (Rrs) in the 6 visible SeaWiFS bands (411, 443, 489, 510, 550, 670nm) constitue the bulk of the data. As prediction targets corresponding chlorophyll concentrations using both fluorescence and HPLC were retained. 
 
 To prepare the data:
 
@@ -214,7 +215,7 @@ No frequentist evaluation criteria such as RMSE, MAE, or R² were used at any st
 
 ## 3. Results
 
-This section presents convergence diagnostics, posterior inference, and model comparison using fully Bayesian metrics. No frequentist evaluation criteria were used. Instead, we rely on information-theoretic model comparison (LOO-CV), posterior predictive checks, and visualization of uncertainty via highest density intervals (HDIs).
+This section presents the outputs of posterior inference, model comparison using Bayesian criteria, and posterior predictive diagnostics for the four primary models. Results from the three supplementary models are provided separately in the Supplement.
 
 ### 3.1 MCMC Convergence
 
