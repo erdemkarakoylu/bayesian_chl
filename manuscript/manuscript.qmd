@@ -85,27 +85,26 @@ This paper builds on prior work and extends it by applying a fully Bayesian mode
 
 This section outlines the dataset, model structures, inference methods, and model evaluation criteria used in this study. I focus on a fully Bayesian approach to modeling chlorophyll-a from satellite remote sensing reflectance (Rrs), emphasizing transparency, uncertainty quantification, and principled model comparison. Four representative models are presented in the main text, while all seven model formulations and results are included in the Supplement.
 
-### 2.1 Study Area and Dataset
+### 2.1 Data Description and Preparation Overview
 
-For pedagogical reasons, I used the well known NOMAD [@werdell2005improved] dataset, which includes quality-controlled in situ measurements of chlorophyll-a matched with coincident satellite Rrs data. These measurements span a range of oceanographic conditions, enabling the development of models that generalize across water types. Sea-surface reflectances (Rrs) in the 6 visible SeaWiFS bands (411, 443, 489, 510, 550, 670nm) constitue the bulk of the data. As prediction targets corresponding chlorophyll concentrations using both fluorescence and HPLC were retained. 
+For pedagogical reasons, I used the well known NOMAD [@werdell2005improved] dataset, which includes quality-controlled in situ measurements of chlorophyll-a matched with coincident satellite Rrs data. These measurements span a range of oceanographic conditions, enabling the development of models that are expected to generalize across water types. The data were loaded using the Python Pandas library [@reback2020pandas], which was used for all subsequent cleaning, preprocessing, and transformation operations.
 
-To prepare the data:
+*Raw Data* - Sea-surface reflectances (Rrs) in the 6 visible SeaWiFS bands (411, 443, 489, 510, 550, 670nm) constitue the bulk of the data. Chlorophyll concentrations, measured via fluorescence or HPLC or both, consituted the target variables. Any row containing an invalid data point (null, zero, or negative) was removed, as proper missing/invalid data imputation is a subject onto itself and beyond the scope of this paper.
 
-- **Chlorophyll-a**:  
-  - Measurements obtained using both HPLC and fluorescence methods  
-  - Combined into a single log-transformed target variable (log₁₀ Chl)  
-  - A binary flag identifies the measurement method for each sample  
+*Data Preprocessing and Transformation* - Chlorophyll measurements from the two different methods were combined into a single data. An auxiliary column was used to flag the measurement method as 'fluo' of 'hplc'. The chlorophyll was then log-transformed to stabilize its variance. The max band ratio (MBR) was computed as $\frac {\max(Rrs411, Rrs443, Rrs489, Rrs)}{Rrs555 + Rrs670}$, similar to the OC6 model proposed by [@oreilly2019]. Another ancillary column was created to captured the actual Rrs band used for each set observations. This numerator type as well as the chlorophyll measurement type are useful to build more hierarchical partial pooling models that can take advantage of such data groups. A sample from the fully processed data used in the subsequent models can be seen in [@data-table].
 
-- **Remote sensing reflectance (Rrs)**:  
-  - Rrs values equal to zero were excluded  
-  - A derived feature, the Maximum Band Ratio (MBR), was computed as:  
-    - Numerator: max(Rrs411, Rrs443, Rrs489, Rrs510)  
-    - Denominator: Rrs555 + Rrs670  
-  - MBR was log-transformed to create the primary input variable  
+:::
 
-- **Grouping and flags**:  
-  - A categorical variable (`MBR_flag`) was used to indicate the dominant Rrs band used in the MBR numerator  
-  - This grouping informed partial pooling structures in hierarchical models  
+|   | log_MBR              | MBR_flag   | log_chl              | hplc_flag   |
+|----:|:-----------------------|:-----------|:-----------------------|:------------|
+| 905 | -0.2545615131431814  | Rrs510     |  0.5837653682849998  | hplc        |
+|  91 | -0.3641327253450254  | Rrs510     |  1.0511525224473812  | fluo        |
+| 528 | -0.0737170739918758  | Rrs510     |  0.14363923527454328 | fluo        |
+| 969 |  0.5813600497877703  | Rrs411     | -0.8272803386505035  | fluo        |
+| 552 |  0.7134341855521412  | Rrs443     | -0.9318141382538383  | hplc        |
+::: A random 5-row sample from the Pandas dataframe holding the data used in subsequent models. *log_MBR* is the log-transformed Max. Band Ratio (MBR) of sea surface reflectances, where the numerator is Max(Rrs411, Rrs443, Rrs489, Rrs510) and the denominator is computed from the sum of Rrs555 and Rrs670. *MBR_flag* indicates which of the 4 possible Rrs bands is used in the numerator for that particular row. *log_chl* is log transformed in-situ measured chlorophyll *a* concentration, originally in $mg\m ^{-3}$. *hplc_flag* is a binary variable indicating whether the measurement was obtained via HPLC or fluorometry. "-flag" are used during modeling for grouping data for hierarchical partial pooling models (see below.) {#data-table}
+:::
+ 
 
 ### 2.2 Bayesian Modeling Framework
 
