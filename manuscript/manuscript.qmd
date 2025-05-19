@@ -83,7 +83,7 @@ This paper builds on prior work and extends it by applying a fully Bayesian mode
 
 ## 2. Materials and Methods
 
-This section outlines the dataset, model structures, inference methods, and model evaluation criteria used in this study. I focus on a fully Bayesian approach to modeling chlorophyll-a from satellite remote sensing reflectance (Rrs), emphasizing transparency, uncertainty quantification, and principled model comparison. Four representative models are presented in the main text, while all seven model formulations and results are included in the Supplement.
+This section outlines the dataset, model structures, inference methods, and model evaluation criteria used in this study. I focus on a fully Bayesian approach to modeling chlorophyll-a from satellite remote sensing reflectance (Rrs), emphasizing transparency, uncertainty quantification, and principled model comparison. Four  models are presented in the main text, while all six model formulations and results are included in the Supplement.
 
 ### 2.1 Data Description and Preparation Overview
 
@@ -108,34 +108,24 @@ For pedagogical reasons, I used the well known NOMAD [@werdell2005improved] data
 
 ### 2.2 Bayesian Modeling Framework
 
-All models were implemented in PyMC v5 and estimated using Hamiltonian Monte Carlo with the No-U-Turn Sampler (NUTS). I modeled log-transformed chlorophyll-a as a function of log-transformed MBR, using a truncated normal likelihood to ensure predictions remained within physically plausible bounds.
+A sound Bayesian modeling principle is to develop several models with increasing levels of complexity as insight is progressively built. I largely follow this approach with the exception that the first model is built from a known formulation, a 4th order polynomial. All models use $log(MBR)$ as main input and $log(chl)$ as target, some use $MBR\_flag$ as additional input, the last model also uses $hlpc_flag$. The following are key components shared across models.
 
-Key components of the modeling framework include:
+*Likelihood* - A truncated gaussian distribution with support constrained to -3.0 to 3.2 on the $log_{10}$ scale,corresponding to 0.001 - 1600 $mg\ m^{-3}$ to reflect both detectable realistic levels of marine surface chlorophyll. 
 
-- **Likelihood**:  
-  - Truncated normal with support between –3.0 and 3.2 (log₁₀ Chl)  
+*Noise Structure* - Noise was incorporated as likelihood dispersion parameter $σ$; some of the models use a constant $σ$, others take heteroscedasticity into account. 
 
-- **Noise structure** (`σ`):  
-  - Varied across models, with increasing structural complexity  
-  - Some models use constant σ; others include heteroscedastic or hierarchical formulations  
-
-- **Priors**:  
-  - Weakly informative priors were used throughout  
-  - Regression coefficients received Normal priors  
-  - All σ terms were modeled with Gamma distributions, allowing flexible but strictly positive support  
-
-- **Software**:  
-  - PyMC for model specification and inference  
-  - ArviZ for posterior diagnostics, posterior predictive checks, and model comparison  
+*Priors* - To estimate model posterior distribution, and produce predictions with uncertainty following data fitting, all model parameters receive a prior distribution, making explicit model assumptions. Often there will be enough data to overrule the priors, which are here mostly a conduit to the Posterior. An important caveat is that care should be taken not to assign a 0-probability through a poorly specified prior where support might actually be needed. Less importantly, more efficient use of the search space can be done through priors that assign 0-probability where support is clearly unreasonable. Thus, all regression parameters receive Normal (Gaussian) 0-centered weakly informative priors. And all $σ$ terms received Gamma priors that provide flexible but strictly positive support. 
+ 
+*Software* -  All models were implemented with the Python probabilistic programming library PyMC V.5 [@abril2023pymc] and estimated using a variant of Hamiltonian Monte Carlo known as the No-U-Turn Sampler (NUTS). Model diagnostics inference evaluation and model comparisons were done through the Arviz package.
+  
 
 ### 2.3 Overview of Candidate Models
 
-I developed seven Bayesian models representing a progression of modeling complexity and assumptions:
+I developed six models representing a progression of modeling complexity and assumptions:
 
 - **Model 1**: Polynomial regression (Bayesian OC6-style baseline)  
 - **Model 2**: Hierarchical linear regression, grouped by dominant MBR numerator band  
-- **Model 3**: Hierarchical linear regression extended to include all Rrs spectral dominance groups  
-- **Model 4**: Model 2 with group-specific constant σ  
+- **Model 4**: Model 2 with group-specific constant likelihood variance  
 - **Model 5**: Global linear heteroscedastic model  
 - **Model 6**: Model 2 with group-wise linear heteroscedasticity  
 - **Model 7**: Model 6 plus an added dispersion term for fluorescence-based measurements  
