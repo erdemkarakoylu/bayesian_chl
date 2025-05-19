@@ -5,8 +5,4 @@ data/00_raw/dfNOMADV2.pkl
 .gitignore
 data/01_reduced/inputs.pqt
 .gitignore
-data/01_reduced/targets.pqt
-data/02_preprocessed/df_in.pqt
-data/03_cleaned/df_in.pqt
-data/03_cleaned/df_out_chl.pqt
-data/03_cleaned/df.pqt
+data/
