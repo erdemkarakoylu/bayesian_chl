@@ -29,7 +29,7 @@ plain-language-summary: Placeholder
 keywords: ['Bayesian modeling', 'Ocean Color', ]
 key-points:
   - Bayesian models have not been fully adopted in Ocean Color remote sensing yet.
-  - A Bayesian workflow is a principled guide to a fully Bayesian study
+  - These models are a principled way to take uncertainty into account
   - 
 bibliography: references.bib
 citation:
@@ -129,69 +129,71 @@ Several models of increasing levels were built.  All models use $log(MBR)$ as pr
 *Software* -  All models were implemented with the Python probabilistic programming library PyMC V.5 [@abril2023pymc] and estimated using a variant of Hamiltonian Monte Carlo known as the No-U-Turn Sampler (NUTS). Model diagnostics inference evaluation and model comparisons were done through the Arviz package.
   
 
-### 2.3 Overview of Candidate Models
+###  Overview of Candidate Models
 
 I developed six models representing a progression of modeling complexity and assumptions:
 
 - **Model 1**: Polynomial regression (Bayesian OC6-style baseline)  
 - **Model 2**: Hierarchical linear regression, grouped by dominant MBR numerator band  
-- **Model 4**: Model 2 with group-specific constant likelihood variance  
-- **Model 5**: Global linear heteroscedastic model  
-- **Model 6**: Model 2 with group-wise linear heteroscedasticity  
-- **Model 7**: Model 6 plus an added dispersion term for fluorescence-based measurements  
+- **Model 3**: Similart to Model 2, with group-specific constant likelihood variance  
+- **Model 4**: Global linear heteroscedastic model  
+- **Model 5**: Similar to Model 2, with group-wise linear heteroscedasticity  
+- **Model 6**: Model 6 plus an added dispersion term for fluorescence-based measurements  
 
-The main text focuses on Models 1, 2, 6, and 7, which span the range of key structural variations. Full equations, priors, and diagnostic results for all models are provided in the Supplement.
+The main text focuses on Models 1, 2, 5, and 6, which span the range of key structural variations. Full equations, priors, and diagnostic results for all models are provided in the Supplement.
 
-### 2.4 Representative Model Structures
+### Representative Model Structures
+Models are described here as sets of equations and Directed Acyclic Graphs (DAG), with the former providing numerical details while the latters helps visualize model structure and flow.
 
-#### 2.4.1 Model 1: Bayesian Polynomial OC6 Regression
+#### Model 1: Bayesian 4th Order Polynomia Regression
 
-This model follows the OC6 formulation proposed by O’Reilly et al. (2019), adapted to a Bayesian framework. It uses a fourth-order polynomial in log(MBR) to estimate log(Chl). 
+This model follows the OC6 formulation proposed by O’Reilly et al. (2019), with the difference that the denominator is the sum of $Rrs555$ and $Rrs670$ rather than the mean. The model mean is a fourth-order polynomial of $log(MBR)$ to estimate $log(Chl)$. The set of proabilistic equations that define this model can be found in the Supplemental Material Section.
+This model can be represented by the following set of probabilistic equations where $X$ represents $log(MBR)$, and $y_i$ correspondonds to the likelihood of the $i^{th}$ $log(Chl)$ observation
 
-This model can be represented by the following set of probabilistic equations:
 
-\begin{align*}
-    \alpha &\sim \text{Normal}(0, 1) \\
-    \beta_1 &\sim \text{Normal}(0, 1) \\
-    \beta_2 &\sim \text{Normal}(0, 1) \\
-    \beta_3 &\sim \text{Normal}(0, 1) \\
-    \beta_4 &\sim \text{Normal}(0, 1) \\
-    \mu &= \alpha + \beta_1 X + \beta_2 X^2 + \beta_3 X^3 + \beta_4 X^4 \\
-    \sigma &\sim \text{Gamma}(2, 2) \\
-    \text{likelihood} &\sim \text{TruncatedNormal}(\mu, \sigma, -3, 3.3)
-\end{align*}
 
 ::: {#fig-oc6-struct}
 
-![](images/oc6_structure.svg)
+![](images/oc6_structure.png)
+
+Model 1 DAG showing model parameters and distributions used as priors. The intercept $α$ and the polynomial slopes, $β1$-$β4$ all have Gaussian priors; $σ$, the likelihood dispersion parameter, receives a Gamma prior; the likelihood itself is constrained by a Truncated Normal distribution (see text for more). The plate containing the likelihood is indexed ($obs\_idx$) indicating the likelihood will be computed for each of the 1082 observations contained in the dataframe and show the number of data points available for fitting.
 
 :::
 
+#### Model 2: Hierarchical Linear Regression (4-band Grouping)
 
-#### 2.4.2 Model 2: Hierarchical Linear Regression (4-band Grouping)
+*Model 2* introduces partial pooling across four groups defined by the dominant MBR numerator band; Rrs411, Rrs443, Rrs489, Rrs510. Each group receives its own slope and intercept with shared hyperpriors. On the one hand each group has its own submodel that can capture details specific to it, while the shared hyperpriors allow for the sharing of information between groups when fitting the model, thus maximizing the use of information contained in the available data. $X_i$ is the same as for Model 1, i.e. $log(MBR)$, assigned a given observation to group $i$ (@fig-eda-mbr). This model retains a constant dispersion parameter $σ$, similar to *Model 1*.
+Below is the system of equations corresponding to this model, where $j$ is the group index and $i$ is the $i^{th}$ obasrvation. Mathematical description of the model can be found in the Supplementary Material. @fig-model2-struct illustrates the model structure.
 
-This model introduces partial pooling across four groups defined by the dominant MBR numerator band. Each group receives its own slope and intercept, with shared hyperpriors.
 
-- Grouping: Rrs411, Rrs443, Rrs489, Rrs510  
-- Partial pooling via shared hyperpriors  
-- Constant σ across all groups  
+::: {#fig-model2-struct}
 
-#### 2.4.3 Model 6: Hierarchical Linear Regression with Group-wise Linear σ
+![](images/model2_structure.png)
 
-To accommodate heteroscedasticity, this model allows σ to vary with log(MBR) within each group, modeled as a log-linear relationship. Parameters are estimated hierarchically across groups.
+Model 2 - Multi-level hierarchical level with partial pooling across $MBR$ numerator groups (Rrs411, Rrs443, Rrs489, Rrs510). Model parameter prior mean and variance have Gaussian and Exponential hyperpriors. This structure allows the sharing of information across groups at model fitting time.
+:::
 
-- log(σ) = α + β × log(MBR), with group-specific α and β  
-- Transformed via exp(log(σ))  
-- Partial pooling of σ slope/intercept terms  
 
-#### 2.4.4 Model 7: Hierarchical Linear σ + Measurement-Specific Dispersion
+#### Model 5: Hierarchical Linear Regression with Linear Heteroscedasticity 
+
+The data plotted in @fig-eda-mbr suggests heteroscedasticity - variance that is not constant. Morevoer variance seems to change with the data. Models 3 and 4 (see Supplemental Material section) investigated the role of groupwise constant heteroscedasticity and global linear heteroscedasticity, respectively. To investigate this further, Model 5 include groupwise linear heteroscedasticity. Thus,  for a given MBR group $j$ $σ_j$ is modeled as a log-linear relationship such that $$log(σ) = α_j + β_j × log(MBR)$ and then transformed via $exp(log(σ_j))$ before being passed to the likelihood. Similarly to the model mean $μ_j$, $σ_j$'s slope and intercept terms are partially pooled and so have common hyperpriors. Mathematical descriiption of the model can be found in the Supplementary Material section; @fig-model5-struct.  illustrates the model structure.
+
+
+::: {#fig-model5-struct}
+
+![](images/model5_structure.png)
+
+Model 5 - Multi-level hierarchical linear model with partial pooling across $MBR$ numerator groups (Rrs411, Rrs443, Rrs489, Rrs510) for both model mean and model variance.  Model parameter prior mean and variance have Gaussian and Exponential hyperpriors similar to Model 2s.
+:::
+
+####  Model 6:  Measurement-Specific Dispersion
 
 This model adds a measurement-method-specific dispersion term to the structure of Model 6, capturing the known increase in variability associated with fluorescence-based chlorophyll estimates.
 
 - Additional noise component applied when chl_flag = fluorescence  
 - All other structure inherited from Model 6  
 
-### 2.5 Prior Specification and Inference Settings
+### Inference Settings
 
 I used weakly informative priors across all models to balance flexibility and regularization:
 
@@ -207,7 +209,7 @@ Inference was conducted using:
 
 I assessed convergence using R-hat (target < 1.01) and effective sample size (ESS > 1000). Full trace plots and diagnostics are included in the Supplement.
 
-### 2.6 Model Comparison and Predictive Evaluation
+### Model Comparison and Predictive Evaluation
 
 I compared model performance using **Pareto Smoothed Importance Sampling Leave-One-Out Cross-Validation (PSIS-LOO-CV)**, implemented via the `arviz.loo()` function. This Bayesian metric estimates the expected log predictive density (ELPD), a principled measure of out-of-sample predictive accuracy.
 
@@ -228,11 +230,11 @@ No frequentist evaluation criteria such as RMSE, MAE, or R² were used at any st
 
 
 
-## 3. Results
+## Results
 
 This section presents the outputs of posterior inference, model comparison using Bayesian criteria, and posterior predictive diagnostics for the four primary models. Results from the three supplementary models are provided separately in the Supplement.
 
-### 3.1 MCMC Convergence
+### MCMC Convergence
 
 All four models converged successfully. The Gelman-Rubin statistic (R-hat ≈ 1.0) and large effective sample sizes (ESS > 1000) across all parameters indicate robust posterior estimation. Diagnostic plots and sampling traces are provided in the Supplementary Material.
 
@@ -241,7 +243,7 @@ All four models converged successfully. The Gelman-Rubin statistic (R-hat ≈ 1.
 - Sufficient tail and bulk ESS
 - Full diagnostics in Supplement
 
-### 3.2 Predictive Performance via Leave-One-Out Cross Validation
+### Predictive Performance via Leave-One-Out Cross Validation
 
 We compared models using Pareto Smoothed Importance Sampling Leave-One-Out Cross-Validation (PSIS-LOO-CV), a fully Bayesian approach to evaluating out-of-sample predictive accuracy.
 
