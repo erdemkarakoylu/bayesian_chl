@@ -93,7 +93,7 @@ For pedagogical reasons, I used the well known NOMAD [@werdell2005improved] data
 
 *Data Preprocessing and Transformation* - Chlorophyll measurements from the two different methods were combined into a single data. An auxiliary column was used to flag the measurement method as 'fluo' of 'hplc'. The chlorophyll was then log-transformed to stabilize its variance. The max band ratio (MBR) was computed as $\frac {\max(Rrs411, Rrs443, Rrs489, Rrs)}{Rrs555 + Rrs670}$, similar to the OC6 model proposed by [@oreilly2019]. Another ancillary column was created to captured the actual Rrs band used for each set observations. This numerator type as well as the chlorophyll measurement type are useful to build more hierarchical partial pooling models that can take advantage of such data groups. A sample from the fully processed data used in the subsequent models can be seen in [@data-table].
 
-:::
+:::{#data-table}
 
 |   | log_MBR              | MBR_flag   | log_chl              | hplc_flag   |
 |----:|:-----------------------|:-----------|:-----------------------|:------------|
@@ -102,15 +102,25 @@ For pedagogical reasons, I used the well known NOMAD [@werdell2005improved] data
 | 528 | -0.0737170739918758  | Rrs510     |  0.14363923527454328 | fluo        |
 | 969 |  0.5813600497877703  | Rrs411     | -0.8272803386505035  | fluo        |
 | 552 |  0.7134341855521412  | Rrs443     | -0.9318141382538383  | hplc        |
-::: A random 5-row sample from the Pandas dataframe holding the data used in subsequent models. *log_MBR* is the log-transformed Max. Band Ratio (MBR) of sea surface reflectances, where the numerator is Max(Rrs411, Rrs443, Rrs489, Rrs510) and the denominator is computed from the sum of Rrs555 and Rrs670. *MBR_flag* indicates which of the 4 possible Rrs bands is used in the numerator for that particular row. *log_chl* is log transformed in-situ measured chlorophyll *a* concentration, originally in $mg\m ^{-3}$. *hplc_flag* is a binary variable indicating whether the measurement was obtained via HPLC or fluorometry. "-flag" are used during modeling for grouping data for hierarchical partial pooling models (see below.) {#data-table}
+
+A random 5-row sample from the Pandas dataframe holding the data used in subsequent models. *log_MBR* is the log-transformed Max. Band Ratio (MBR) of sea surface reflectances, where the numerator is Max(Rrs411, Rrs443, Rrs489, Rrs510) and the denominator is computed from the sum of Rrs555 and Rrs670. *MBR_flag* indicates which of the 4 possible Rrs bands is used in the numerator for that particular row. *log_chl* is log transformed in-situ measured chlorophyll *a* concentration, originally in $mg\ m^{-3}$. *hplc_flag* is a binary variable indicating whether the measurement was obtained via HPLC or fluorometry. "-flag" are used during modeling for grouping data for hierarchical partial pooling models, explained further below. These groupings can be seen in [@fig-eda]
+
 :::
- 
+
+::: {#fig-eda layout-ncol=2}
+
+![](images/eda_numerator.png){#fig-eda-mbr}
+
+![](images/eda_hplc.png){#fig-eda-hplc}
+
+Two ways of grouping the data. [@fig-eda-mbr], max band ratio numerator; [@fig-eda-hplc], chlorophyll measurement method.
+:::
 
 ### 2.2 Bayesian Modeling Framework
 
-A sound Bayesian modeling principle is to develop several models with increasing levels of complexity as insight is progressively built. I largely follow this approach with the exception that the first model is built from a known formulation, a 4th order polynomial. All models use $log(MBR)$ as main input and $log(chl)$ as target, some use $MBR\_flag$ as additional input, the last model also uses $hlpc_flag$. The following are key components shared across models.
+Several models of increasing levels were built.  All models use $log(MBR)$ as primary input and $log(chl)$ as target, some use $MBR\_flag$ as additional input, the last model also uses $hlpc_flag$. The following are key components shared across models.
 
-*Likelihood* - A truncated gaussian distribution with support constrained to -3.0 to 3.2 on the $log_{10}$ scale,corresponding to 0.001 - 1600 $mg\ m^{-3}$ to reflect both detectable realistic levels of marine surface chlorophyll. 
+*Likelihood* - A truncated gaussian distribution with support constrained to -3.0 to 3.2 on the $log_{10}$ scale,corresponding to $0.001 - 1600 mg\ m^{-3}$ to reflect both detectable realistic levels of marine surface chlorophyll. 
 
 *Noise Structure* - Noise was incorporated as likelihood dispersion parameter $σ$; some of the models use a constant $σ$, others take heteroscedasticity into account. 
 
@@ -136,11 +146,27 @@ The main text focuses on Models 1, 2, 6, and 7, which span the range of key stru
 
 #### 2.4.1 Model 1: Bayesian Polynomial OC6 Regression
 
-This model follows the OC6 formulation proposed by O’Reilly et al. (2019), adapted to a Bayesian framework. It uses a fourth-order polynomial in log(MBR) to estimate log(Chl).
+This model follows the OC6 formulation proposed by O’Reilly et al. (2019), adapted to a Bayesian framework. It uses a fourth-order polynomial in log(MBR) to estimate log(Chl). 
 
-- No grouping or partial pooling  
-- Constant noise term σ shared across all observations  
-- Gamma prior placed on σ  
+This model can be represented by the following set of probabilistic equations:
+
+\begin{align*}
+    \alpha &\sim \text{Normal}(0, 1) \\
+    \beta_1 &\sim \text{Normal}(0, 1) \\
+    \beta_2 &\sim \text{Normal}(0, 1) \\
+    \beta_3 &\sim \text{Normal}(0, 1) \\
+    \beta_4 &\sim \text{Normal}(0, 1) \\
+    \mu &= \alpha + \beta_1 X + \beta_2 X^2 + \beta_3 X^3 + \beta_4 X^4 \\
+    \sigma &\sim \text{Gamma}(2, 2) \\
+    \text{likelihood} &\sim \text{TruncatedNormal}(\mu, \sigma, -3, 3.3)
+\end{align*}
+
+::: {#fig-oc6-struct}
+
+![](images/oc6_structure.svg)
+
+:::
+
 
 #### 2.4.2 Model 2: Hierarchical Linear Regression (4-band Grouping)
 

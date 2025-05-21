@@ -1,0 +1,113 @@
+---
+title: "Supplementary Material"
+subtitle: "Shifting paradigms in Ocean Color: Bayesian Inference for Uncertainty-Aware Chlorophyll Estimation"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    keep-tex: true
+bibliography: references.bib
+keep-tex: true
+---
+
+This document provides supplementary material supporting the manuscript titled _"Shifting paradigms in Ocean Color: Bayesian Inference for Uncertainty-Aware Chlorophyll Estimation"_, submitted to *Remote Sensing of Environment*.
+
+# Supplementary Methods
+
+
+- Full Bayesian model specifications
+- Prior predictive checks
+- Diagnostic metrics for convergence (e.g., $\hat{R}$, ESS)
+- Model comparison procedures (WAIC, LOO)
+
+
+## Model 1 - Fourth Order Polynomial Regression
+- model introduction (relation to Oreilly and Werdell 2019)
+
+### Model Description and Priors
+- brief word description
+
+### Mathematical Description
+\begin{align*}
+    \alpha &\sim \text{Normal}(0, 1) \\
+    \beta_1 &\sim \text{Normal}(0, 1) \\
+    \beta_2 &\sim \text{Normal}(0, 1) \\
+    \beta_3 &\sim \text{Normal}(0, 1) \\
+    \beta_4 &\sim \text{Normal}(0, 1) \\
+    \mu_i &= \alpha + \beta_1 X + \beta_2 X^2 + \beta_3 X^3 + \beta_4 X^4 \\
+    \sigma &\sim \text{Gamma}(2, 2) \\
+    y_i &\sim \text{TruncatedNormal}(\mu, \sigma, -3, 3.2)
+\end{align*}
+
+### Model Limitations
+- Discussion of limitations (e.g., fixed structure, sensitivity to polynomial degree, difficulty of interpretation)
+
+
+## Model 2: Hierarchical linear regression, grouped by dominant MBR numerator band  
+
+- model introduction (relation to Oreilly and Werdell 2019)
+
+### Model Description and Priors
+- brief word description
+
+### Mathematical Description
+- latex equations
+### Model Limitations
+- Discussion of limitations
+
+
+## Model 3: Similar to Model 2, with group-specific constant likelihood variance  
+- model introduction (relation to Oreilly and Werdell 2019)
+
+### Model Description and Priors
+- brief word description
+
+### Mathematical Description
+- latex equations
+### Model Limitations
+- Discussion of limitations
+
+## Model 4: Global linear heteroscedastic model 
+- model introduction (relation to Oreilly and Werdell 2019)
+
+### Model Description and Priors
+- brief word description
+
+### Mathematical Description
+- latex equations
+### Model Limitations
+- Discussion of limitations
+
+## Model 5: Hierarchical Linear Regression with Linear Group-Wise Heteroscedasticity 
+- model introduction 
+
+
+### Model Description and Priors
+- brief word description of the idea behind the model and the priors used.
+
+\begin{align*}
+    \alpha_\mu &\sim \text{Normal}(0, 1) \\
+    \alpha_\sigma &\sim \text{Exponential}(1) \\
+    \beta_\mu &\sim \text{Normal}(0, 1) \\
+    \beta_\sigma &\sim \text{Exponential}(1) \\
+    \sigma_{\alpha_\mu} &\sim \text{Normal}(0, 1) \\
+    \sigma_{\alpha_\sigma} &\sim \text{Exponential}(1) \\
+    \sigma_{\beta_\mu} &\sim \text{Normal}(0, 1) \\
+    \sigma_{\beta_\sigma} &\sim \text{Exponential}(1) \\
+    \alpha_j &\sim \text{Normal}(\alpha_\mu, \alpha_\sigma) \quad \text{for } j = 1, \dots, J \\
+    \beta_j &\sim \text{Normal}(\beta_\mu, \beta_\sigma) \quad \text{for } j = 1, \dots, J \\
+    \sigma_{\alpha_j} &\sim \text{Normal}(\sigma_{\alpha_\mu}, \sigma_{\alpha_\sigma}) \quad \text{for } j = 1, \dots, J \\
+    \sigma_{\beta_j} &\sim \text{Normal}(\sigma_{\beta_\mu}, \sigma_{\beta_\sigma}) \quad \text{for } j = 1, \dots, J \\
+    \mu_i &= \alpha_{g_i} + \beta_{g_i} \cdot \log\text{MBR}_i \quad \text{for } i = 1, \dots, N \\
+    \log \sigma_i &= \sigma_{\alpha_{g_i}} + \sigma_{\beta_{g_i}} \cdot \log\text{MBR}_i \\
+    \sigma_i &= \exp(\log \sigma_i) \\
+    \log\text{Chl}_i &\sim \text{TruncatedNormal}(\mu_i, \sigma_i, -3, 3.2)
+\end{align*}
+
+# Supplementary Figures
+
+```{figure} figs/ppc_example.png
+---
+width: 85%
+fig-cap: "Figure S1: Posterior predictive check comparing observed and simulated chlorophyll-a distributions across groups."
+---
