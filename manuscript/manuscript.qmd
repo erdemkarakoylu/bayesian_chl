@@ -183,7 +183,7 @@ The data plotted in @fig-eda-mbr suggests heteroscedasticity - variance that is 
 
 ![](images/model5_structure.png)
 
-Model 5 - Multi-level hierarchical linear model with partial pooling across $MBR$ numerator groups (Rrs411, Rrs443, Rrs489, Rrs510) for both model mean and model variance.  Model parameter prior mean and variance have Gaussian and Exponential hyperpriors similar to Model 2s.
+Model 5 - Multi-level hierarchical linear model with partial pooling across $MBR$  groups (Rrs411, Rrs443, Rrs489, Rrs510) for both model mean and model variance.  Model parameter prior mean and variance have Gaussian and Exponential hyperpriors similar to Model 2s.
 :::
 
 ####  Model 6:  Measurement-Specific Dispersion
@@ -193,12 +193,20 @@ This model adds a measurement-method-specific dispersion term to the structure o
 - Additional noise component applied when chl_flag = fluorescence  
 - All other structure inherited from Model 6  
 
+::: {#fig-model6-struct}
+
+![](images/model6_structure.png)
+
+Model 6 - Similar to Model 5; multi-level hierarchical linear model partial pooling across $MBR$  groups (Rrs411, Rrs443, Rrs489, Rrs510) for both model mean and variance. However the linear variance model gets an additional parameter $γ$ that allows for the model dispersion to depend on the chlorophyll measurement method (fluorescence or HPLC). While this doesn't affect future data prediction, for which ground truth mearuement are optional, it does allow the development of insight on the effect of chloroophyll measurement method on model ucertainty.
+:::
+
+
 ### Inference Settings
 
 I used weakly informative priors across all models to balance flexibility and regularization:
 
 - **Regression terms**: Normal(0, 1) unless otherwise stated  
-- **Hyperpriors**: Normal and HalfNormal for hierarchical parameters  
+- **Hyperpriors**: Normal and Exponential for hierarchical parameters  
 - **Noise terms** (`σ`): Gamma(γ, φ), chosen to reflect plausible dispersion values  
 
 Inference was conducted using:
