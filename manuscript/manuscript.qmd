@@ -81,11 +81,11 @@ While these studies mark important progress, they often adopt only isolated comp
 This paper builds on prior work and extends it by applying a fully Bayesian modeling framework for chlorophyll-a prediction from sea surface reflectance (Rrs), with explicit treatment of uncertainty, model complexity, and measurement error.
 
 
-## 2. Materials and Methods
+## Materials and Methods
 
 This section outlines the dataset, model structures, inference methods, and model evaluation criteria used in this study. I focus on a fully Bayesian approach to modeling chlorophyll-a from satellite remote sensing reflectance (Rrs), emphasizing transparency, uncertainty quantification, and principled model comparison. Four  models are presented in the main text, while all six model formulations and results are included in the Supplement.
 
-### 2.1 Data Description and Preparation Overview
+### Data Description and Preparation Overview
 
 For pedagogical reasons, I used the well known NOMAD [@werdell2005improved] dataset, which includes quality-controlled in situ measurements of chlorophyll-a matched with coincident satellite Rrs data. These measurements span a range of oceanographic conditions, enabling the development of models that are expected to generalize across water types. The data were loaded using the Python Pandas library [@reback2020pandas], which was used for all subsequent cleaning, preprocessing, and transformation operations.
 
@@ -116,7 +116,7 @@ A random 5-row sample from the Pandas dataframe holding the data used in subsequ
 Two ways of grouping the data. [@fig-eda-mbr], max band ratio numerator; [@fig-eda-hplc], chlorophyll measurement method.
 :::
 
-### 2.2 Bayesian Modeling Framework
+### Bayesian Modeling Framework
 
 Several models of increasing levels were built.  All models use $log(MBR)$ as primary input and $log(chl)$ as target, some use $MBR\_flag$ as additional input, the last model also uses $hlpc_flag$. The following are key components shared across models.
 
@@ -162,8 +162,7 @@ Model 1 DAG showing model parameters and distributions used as priors. The inter
 
 #### Model 2: Hierarchical Linear Regression (4-band Grouping)
 
-*Model 2* introduces partial pooling across four groups defined by the dominant MBR numerator band; Rrs411, Rrs443, Rrs489, Rrs510. Each group receives its own slope and intercept with shared hyperpriors. On the one hand each group has its own submodel that can capture details specific to it, while the shared hyperpriors allow for the sharing of information between groups when fitting the model, thus maximizing the use of information contained in the available data. $X_i$ is the same as for Model 1, i.e. $log(MBR)$, assigned a given observation to group $i$ (@fig-eda-mbr). This model retains a constant dispersion parameter $σ$, similar to *Model 1*.
-Below is the system of equations corresponding to this model, where $j$ is the group index and $i$ is the $i^{th}$ obasrvation. Mathematical description of the model can be found in the Supplementary Material. @fig-model2-struct illustrates the model structure.
+*Model 2* introduces partial pooling across four groups defined by the dominant MBR numerator band; Rrs411, Rrs443, Rrs489, Rrs510 (*cf*. @fig-eda-mbr). Each group receives its own slope and intercept with shared hyperpriors. On the one hand each group has its own sub-model that can capture details specific to it, while the shared hyperpriors allow for the sharing of information between groups when fitting the model, thus maximizing the use of information contained in the available data.  Mathematical description of the model can be found in the Supplementary Material. @fig-model2-struct illustrates the model structure.
 
 
 ::: {#fig-model2-struct}
@@ -171,12 +170,13 @@ Below is the system of equations corresponding to this model, where $j$ is the g
 ![](images/model2_structure.png)
 
 Model 2 - Multi-level hierarchical level with partial pooling across $MBR$ numerator groups (Rrs411, Rrs443, Rrs489, Rrs510). Model parameter prior mean and variance have Gaussian and Exponential hyperpriors. This structure allows the sharing of information across groups at model fitting time.
+
 :::
 
 
 #### Model 5: Hierarchical Linear Regression with Linear Heteroscedasticity 
 
-The data plotted in @fig-eda-mbr suggests heteroscedasticity - variance that is not constant. Morevoer variance seems to change with the data. Models 3 and 4 (see Supplemental Material section) investigated the role of groupwise constant heteroscedasticity and global linear heteroscedasticity, respectively. To investigate this further, Model 5 include groupwise linear heteroscedasticity. Thus,  for a given MBR group $j$ $σ_j$ is modeled as a log-linear relationship such that $$log(σ) = α_j + β_j × log(MBR)$ and then transformed via $exp(log(σ_j))$ before being passed to the likelihood. Similarly to the model mean $μ_j$, $σ_j$'s slope and intercept terms are partially pooled and so have common hyperpriors. Mathematical descriiption of the model can be found in the Supplementary Material section; @fig-model5-struct.  illustrates the model structure.
+The data plotted in @fig-eda suggests heteroscedasticity - variance that is not constant, but rather changes depending on the data. Models 3 and 4 investigate the role of group-wise constant heteroscedasticity and global linear heteroscedasticity, respectively. Details of these models can be found in the Supplementary Material section. To investigate this further, Model 5 looks at group-wise linear heteroscedasticity. Thus, for a given MBR group $j$ $σ_j$ is modeled as a log-linear relationship such that $$log(σ) = α_j + β_j × log(MBR)$ and then transformed via $exp(log(σ_j))$ before being passed on to the likelihood. Similar to the model mean,  $μ_j$, $σ_j$'s slope and intercept terms are partially pooled and so have common hyperpriors. Mathematical descriiption of the model can be found in the Supplementary Material section; @fig-model5-struct.  illustrates the model structure.
 
 
 ::: {#fig-model5-struct}
@@ -193,7 +193,7 @@ This model adds a measurement-method-specific dispersion term to the structure o
 - Additional noise component applied when chl_flag = fluorescence  
 - All other structure inherited from Model 6  
 
-::: {#fig-model6-struct}
+::: {#fig-model6-struct fig-pos="H"}
 
 ![](images/model6_structure.png)
 
@@ -201,25 +201,15 @@ Model 6 - Similar to Model 5; multi-level hierarchical linear model partial pool
 :::
 
 
-### Inference Settings
+### Prior Specifications and Model Fitting
 
-I used weakly informative priors across all models to balance flexibility and regularization:
+*Priors* - I used weakly informative priors across all models to balance flexibility and regularization.  For regression parameters  I used Gaussian priors, which in the case of single-level models like Model 1, were given a $0$ mean and variance $1$, to encourage parameter sparsity. Hyperpriors of prior means were set to Gaussans of mean 0 and variance 1 to encourage sparsity. Hyperpriors of prior variances set to  Exponential distribution with rate set to $$1$, which has significant density near 0, encourages similarity across groups unless the data mandates otherwise. This hyperprior also encourages uncertainty shrinkage across groups if possible. The likelihood dispersion $σ$, when constant was set, to a Gamma distribution of shape and rate both set to $2$. Prior soundness was assessed using *Prior Predictive Checks*. This procedure takes advantage of the fact taht Bayesian models are generative to insure that values of ($log(Chl)$) predicted by the model are reasonable even before model fitting. This was plotted as Cumulative Distribution Function (CDF) of $log(Chl)$. See *Results* section for a Prior Predictive Checks plot example; plots for all models can be found in the Supplementary Material section. 
 
-- **Regression terms**: Normal(0, 1) unless otherwise stated  
-- **Hyperpriors**: Normal and Exponential for hierarchical parameters  
-- **Noise terms** (`σ`): Gamma(γ, φ), chosen to reflect plausible dispersion values  
-
-Inference was conducted using:
-
-- 4 chains per model  
-- 1000–1500 tuning steps  
-- ≥2000 posterior samples per chain  
-
-I assessed convergence using R-hat (target < 1.01) and effective sample size (ESS > 1000). Full trace plots and diagnostics are included in the Supplement.
+*Model Fitting* - The model posterior was approximated using the No U-Turn Sampler (NUTS), an efficient and mature variant of Hamiltonian Monte Carlo (HMC), which uses particle physics to sample the posterior. Sampler settings were as follows. Four independent sampling runs referred to as *chains* were used to assess sampler convergence. Prior to sampling, 1000 tuning steps were used for each chain to maximize sampler efficiency. The 2000 samples were recorded for each chain totalling 8000 samples. I assessed sampler convergence using the Gelman-Rubin statistic, $\hat{R}$ and effective sample size($ESS$). Convergence is acceptable for $\hat{R}$ < 1.01 and $ESS > 1000$. Full trace plots and diagnostics are included in the Supplementary Material section. Goodness of fit was assessed using *Posterior plots*, which show  *Posterior Predictive Checks, which show the expected 
 
 ### Model Comparison and Predictive Evaluation
 
-I compared model performance using **Pareto Smoothed Importance Sampling Leave-One-Out Cross-Validation (PSIS-LOO-CV)**, implemented via the `arviz.loo()` function. This Bayesian metric estimates the expected log predictive density (ELPD), a principled measure of out-of-sample predictive accuracy.
+I compared model performance using **Pareto Smoothed Importance Sampling Leave-One-Out Cross-Validation (PSIS-LOO-CV)** [@vehtari2017]. This Bayesian metric estimates the expected log predictive density (ELPD), a principled measure of out-of-sample predictive accuracy, that uses the entire posterior predictive distribution
 
 - Models were ranked by ELPD  
 - ΔELPD values were interpreted relative to their standard errors  
@@ -235,7 +225,6 @@ I evaluated predictive accuracy and calibration using:
   - Fraction of observed values falling within 95% posterior predictive intervals  
 
 No frequentist evaluation criteria such as RMSE, MAE, or R² were used at any stage as these do not make sense in this context where for each observations, a probability distribution of the prediction is produced.
-
 
 
 ## Results
