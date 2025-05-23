@@ -84,7 +84,7 @@ This document provides supplementary material supporting the manuscript titled _
 
 ### Model Description and Priors
 - brief word description of the idea behind the model and the priors used.
-
+### Mathematical Description
 \begin{align*}
     \alpha_\mu &\sim \text{Normal}(0, 1) \\
     \alpha_\sigma &\sim \text{Exponential}(1) \\
@@ -104,9 +104,73 @@ This document provides supplementary material supporting the manuscript titled _
     \log\text{Chl}_i &\sim \text{TruncatedNormal}(\mu_i, \sigma_i, -3, 3.2)
 \end{align*}
 
+
+## Model 6:
+
+### Mathematical Description
+
+\begin{align*}
+    \alpha_\mu &\sim \text{Normal}(0, 1) \\
+    \alpha_\sigma &\sim \text{Exponential}(1) \\
+    \beta_\mu &\sim \text{Normal}(0, 1) \\
+    \beta_\sigma &\sim \text{Exponential}(1) \\
+    \sigma_{\alpha_\mu} &\sim \text{Normal}(0, 1) \\
+    \sigma_{\alpha_\sigma} &\sim \text{Exponential}(1) \\
+    \sigma_{\beta_\mu} &\sim \text{Normal}(0, 1) \\
+    \sigma_{\beta_\sigma} &\sim \text{Exponential}(1) \\
+    \alpha_j &\sim \text{Normal}(\alpha_\mu, \alpha_\sigma) \quad \text{for } j = 1, \dots, J \\
+    \beta_j &\sim \text{Normal}(\beta_\mu, \beta_\sigma) \quad \text{for } j = 1, \dots, J \\
+    \sigma_{\alpha_j} &\sim \text{Normal}(\sigma_{\alpha_\mu}, \sigma_{\alpha_\sigma}) \quad \text{for } j = 1, \dots, J \\
+    \sigma_{\beta_j} &\sim \text{Normal}(\sigma_{\beta_\mu}, \sigma_{\beta_\sigma}) \quad \text{for } j = 1, \dots, J \\
+    \gamma &\sim \text{Normal}(0, 1) \quad \text{(fluorescence-specific noise effect)} \\
+    \mu_i &= \alpha_{g_i} + \beta_{g_i} \cdot \log\text{MBR}_i \quad \text{for } i = 1, \dots, N \\
+    \log \sigma_i &= \sigma_{\alpha_{g_i}} + \sigma_{\beta_{g_i}} \cdot \log\text{MBR}_i + \gamma \cdot (1 - \text{ChlType}_i) \\
+    \sigma_i &= \exp(\log \sigma_i) \\
+    \log\text{Chl}_i &\sim \text{TruncatedNormal}(\mu_i, \sigma_i, -3, 3.2)
+\end{align*}
+
+## Model Fitting
+
+
+### The Posterior Distribution
+
+Mathematically the **posterior distribution** of the model parameters, given the observed data, is defined by Bayes' Theorem. For the simpler *Model 1* this looks like:
+
+$$p(\alpha, \beta_1, \beta_2, \beta_3, \beta_4, \sigma | X) = \frac{p(X | \alpha, \beta_1, \beta_2, \beta_3, \beta_4, \sigma) \, p(\alpha, \beta_1, \beta_2, \beta_3, \beta_4, \sigma)}{p(X)}$$
+
+Where:
+* $p(\text{data} | \alpha, \beta_1, \beta_2, \beta_3, \beta_4, \sigma)$ is the **likelihood function**, which is the product of the individual likelihoods for each observed data point $y_i$:
+    $$
+    p(\text{data} | \alpha, \beta_1, \beta_2, \beta_3, \beta_4, \sigma) = \prod_{i=1}^{N} \text{TruncatedNormal}(y_i | \mu_i, \sigma, -3, 3.3)
+    $$
+    with
+    $$
+    \mu_i = \alpha + \beta_1 X_i + \beta_2 X_i^2 + \beta_3 X_i^3 + \beta_4 X_i^4
+    $$
+* $p(\alpha, \beta_1, \beta_2, \beta_3, \beta_4, \sigma)$ is the **joint prior distribution** of all parameters, which with the underlying assumption that they are conditionally independent, is the product of their individual prior distributions:
+    $$
+    p(\alpha, \beta_1, \beta_2, \beta_3, \beta_4, \sigma) = p(\alpha) \, p(\beta_1) \, p(\beta_2) \, p(\beta_3) \, p(\beta_4) \, p(\sigma)
+    $$
+    From your model:
+    * $p(\alpha) = \text{Normal}(0, 1)$
+    * $p(\beta_j) = \text{Normal}(0, 1)$ for $j=1,2,3,4$
+    * $p(\sigma) = \text{Gamma}(2, 2)$
+* $p(X)$ is the **marginal likelihood** (also known as the evidence), which is a normalizing constant:
+    $$
+    p(X) = \int p(X | \alpha, \beta_1, \beta_2, \beta_3, \beta_4, \sigma) \, p(\alpha, \beta_1, \beta_2, \beta_3, \beta_4, \sigma) \, d\alpha \, d\beta_1 \, d\beta_2 \, d\beta_3 \, d\beta_4 \, d\sigma
+    $$
+
+With many parameters, these integrals become quick intractable. Thus for often then none, the full posterior distribution will have to be approximated. The most accurate approximation is Markov Chain Monte Carlo (MCMC) sampling  based on accepted/rejected probabilistic jumps in the posterior space. MCMC algorithms have become quite since the early Metropolis-type algorithms. In this study I used the NUTS sampler, discussed next.
+
+### Approximating the Posterior with HMC and the NUTS Sampler
+Hamiltonian Monte Carlo (HMC) is an MCMC method that conceptualizes parameters as particles moving on a potential energy surface derived from the negative log-posterior. It introduces momentum variables and simulates Hamiltonian dynamics through "leapfrog steps" to propose new parameter values, allowing for more efficient exploration of complex parameter spaces compared to simpler MCMC techniques. The No-U-Turn Sampler (NUTS) enhances HMC by adaptively determining the optimal number of leapfrog steps in each iteration, preventing inefficient "U-turns" in the sampling trajectory. This makes NUTS a highly efficient and robust algorithm for approximating posterior distributions. The pre-print article by @betancourt2018
+
+### Posterior Predictive
+
+
 # Supplementary Figures
 
-```{figure} figs/ppc_example.png
+```{figure} images/ppc_example.png
 ---
 width: 85%
 fig-cap: "Figure S1: Posterior predictive check comparing observed and simulated chlorophyll-a distributions across groups."
