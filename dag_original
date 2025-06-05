@@ -1,0 +1,17 @@
+digraph DAG_original {
+	graph [rankdir=LR]
+	chl_true [label="Chl-a (latent)" color=blue]
+	gamma [label="γ_chl_type" color=blue]
+	method_idx [label="chl_type_idx
+(0=Fluo 1=HPLC)" color=green]
+	regime [label="regime
+(<0.10 mg m⁻³)" color=green]
+	log_sigma [label="log σ" color=blue]
+	chl_meas [label="Measured Chl-a" color=green]
+	chl_true -> chl_meas
+	chl_true -> log_sigma
+	gamma -> log_sigma [color=blue]
+	method_idx -> log_sigma [color=green]
+	regime -> log_sigma [color=green]
+	log_sigma -> chl_meas
+}

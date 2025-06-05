@@ -1,0 +1,59 @@
+digraph {
+	subgraph "clusterobs_idx (1082)" {
+		X [label="X
+~
+Data" shape=box style="rounded, filled"]
+		likelihood [label="likelihood
+~
+TruncatedNormal" shape=ellipse style=filled]
+		group_idx [label="group_idx
+~
+Data" shape=box style="rounded, filled"]
+		label="obs_idx (1082)" labeljust=r labelloc=b style=rounded
+	}
+	"σ_α" [label="σ_α
+~
+Normal" shape=ellipse]
+	"β_μ" [label="β_μ
+~
+Normal" shape=ellipse]
+	"σ_β" [label="σ_β
+~
+Normal" shape=ellipse]
+	"α_σ" [label="α_σ
+~
+Exponential" shape=ellipse]
+	"β_σ" [label="β_σ
+~
+Exponential" shape=ellipse]
+	"α_μ" [label="α_μ
+~
+Normal" shape=ellipse]
+	subgraph "clusterMBR_numerator (4)" {
+		"β" [label="β
+~
+Normal" shape=ellipse]
+		"α" [label="α
+~
+Normal" shape=ellipse]
+		label="MBR_numerator (4)" labeljust=r labelloc=b style=rounded
+	}
+	subgraph cluster1082 {
+		"σ" [label="σ
+~
+Deterministic" shape=box]
+		label=1082 labeljust=r labelloc=b style=rounded
+	}
+	"α_σ" -> "α"
+	"α_μ" -> "α"
+	"β_σ" -> "β"
+	"β_μ" -> "β"
+	X -> "σ"
+	"σ_α" -> "σ"
+	"σ_β" -> "σ"
+	X -> likelihood
+	"α" -> likelihood
+	group_idx -> likelihood
+	"σ" -> likelihood
+	"β" -> likelihood
+}

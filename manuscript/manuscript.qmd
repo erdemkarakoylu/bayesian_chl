@@ -44,7 +44,7 @@ date: last-modified
 Satellite ocean color remote sensing has long served as a cornerstone of marine ecosystem monitoring, offering global and synoptic coverage of surface ocean properties. Among these, chlorophyll-a ($Chl_a$) concentration remains a central metric, widely used as a proxy for phytoplankton biomass, primary production, and water quality. The retrieval of $Chl_a$ from ocean color data has evolved over decades, resulting in a diverse lineage of empirical and semi-empirical algorithms. The following section summarizes this historical development, which sets the stage for a critical examination of the statistical foundations underlying current approaches.
 
 
-### Historical Context of Chlorophyll Algorithms
+###  Background
 
 Satellite ocean color observations have long been fundamental for monitoring marine ecosystems, as they enable global estimation of chlorophyll‑a ($Chl_a$) — a key indicator of phytoplankton biomass and ocean productivity. Early empirical algorithms, notably developed by O’Reilly et al. [@oreilly1998; @oreilly2000], established the $OCx$ family (where $x$ denotes the number of bands used) of polynomial regression models. These models relate blue-to-green reflectance ratios (after log‑transformation) to in situ $Chl_a$, employing either straight band ratios (BR) or maximum band ratios (MBR)—the latter selecting the highest available blue-to-green ratio for any given observation as input to a high‑order polynomial. These formulations have served as the operational foundation for chlorophyll‑a products across a broad range of satellite ocean color sensors—from the pioneering Coastal Zone Color Scanner (CZCS) through SeaWiFS, MODIS, and MERIS to more recent missions—offering a straightforward and robust approach for Case‑1 waters. However, their performance is more limited in optically complex Case‑2 waters and remains sensitive to atmospheric correction errors.
 
@@ -69,8 +69,7 @@ In regression and classification, maximizing likelihood is often treated as suff
 
 This epistemic shortcut has been directly critiqued in the machine learning literature. Gal [@gal2016uncertainty] and Ghahramani [@gahramani2015probabilistic] point out that most ML models discard uncertainty altogether, treating the outcome of an optimization as if it were an inference. The result is overconfident predictions and brittle generalization—concerns that echo Clayton’s critique.
 
-Bishop [@bishop2006pattern] similarly distinguishes between the utility of predictive models and the inferential scaffolding required to quantify uncertainty, reinforcing the notion that likelihood alone is insufficient—and that the Bernoulli Fallacy permeates much of applied machine learning.
-
+Bishop [@bishop2006pattern] similarly distinguishes between the utility of predictive models and the inferential scaffolding required to quantify uncertainty, reinforcing the notion that likelihood alone is insufficient—and that the Bernoulli Fallacy permeates much of applied machine learning. 
 
 ### Overcoming limitations 
 

@@ -1,0 +1,32 @@
+digraph {
+	"β1" [label="β1
+~
+Normal" shape=ellipse]
+	"β4" [label="β4
+~
+Normal" shape=ellipse]
+	"β2" [label="β2
+~
+Normal" shape=ellipse]
+	"β3" [label="β3
+~
+Normal" shape=ellipse]
+	"α" [label="α
+~
+Normal" shape=ellipse]
+	"σ" [label="σ
+~
+Gamma" shape=ellipse]
+	subgraph "clusterobs_idx (1082)" {
+		likelihood [label="likelihood
+~
+TruncatedNormal" shape=ellipse style=filled]
+		label="obs_idx (1082)" labeljust=r labelloc=b style=rounded
+	}
+	"β4" -> likelihood
+	"β2" -> likelihood
+	"β3" -> likelihood
+	"α" -> likelihood
+	"β1" -> likelihood
+	"σ" -> likelihood
+}
