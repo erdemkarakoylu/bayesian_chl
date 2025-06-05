@@ -1,0 +1,1 @@
+This project is my attempt to change mindset in the Oceanographic Community at large and get them to use Bayesian methods. The Ocean is a noisy place. Frequentism will never cut it here because: No integration of background knowledge, un-principled, arbitrary, and uses the wrong probability to boot. 
