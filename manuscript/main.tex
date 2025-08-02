@@ -1,0 +1,325 @@
+\documentclass[preprint,authoryear]{elsarticle}
+
+% --------------------------------------------------
+% Packages
+% --------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{lineno} % for line numbers (optional)
+\usepackage{color}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{siunitx} % for SI units
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{natbib}
+
+% --------------------------------------------------
+% Line numbers and spacing (remove before final version if needed)
+% --------------------------------------------------
+% \linenumbers
+\doublespacing
+
+% --------------------------------------------------
+% Journal info
+% --------------------------------------------------
+\journal{Remote Sensing of Environment}
+
+% --------------------------------------------------
+% Document Start
+% --------------------------------------------------
+\begin{document}
+
+\begin{frontmatter}
+
+% \title{Shifting Paradigms: A Complete Bayesian Workflow for Ocean Color Remote Sensing}
+\title{Redefining Uncertainty: A Complete Bayesian Workflow for Ocean Color Remote Sensing}
+
+\author[inst1]{Erdem M. Karaköylü}
+\ead{erdemk@protonmail.com}
+
+\affiliation[inst1]{organization={Independent Consultant}, 
+            city={University Park},
+            postcode={20782}, 
+            country={USA}}
+
+
+% --------------------------------------------------
+% Abstract
+% --------------------------------------------------
+\begin{abstract}
+[Your abstract goes here.]
+\end{abstract}
+
+\begin{keyword}
+Ocean Color \sep Bayesian Workflow \sep Chlorophyll Model \sep Bayesian modeling 
+\end{keyword}
+
+\end{frontmatter}
+
+% --------------------------------------------------
+% Main Body
+% --------------------------------------------------
+
+\section{Introduction}
+
+Satellite ocean color remote sensing has long served as a cornerstone of marine ecosystem monitoring, offering global and synoptic coverage of surface ocean properties. Among these, chlorophyll-a ($Chl_a$) concentration remains a central quantity, widely used as a proxy for phytoplankton biomass, primary production and water quality. The retrieval of $Chl_a$ from ocean color data has evolved over decades, resulting in a diverse lineage of empirical and semi-empirical algorithms. The following section summarizes this historical development, which sets the stage for a critical examination of the statistical foundations underlying current approaches.
+
+
+\subsection{Background} 
+
+Early empirical algorithms, notably the $OCx$ family developed by O’Reilly et al. \citep{oreilly1998, oreilly2000}, established a statistical template for retrieving chlorophyll-a ($Chl_a$) concentration from ocean color data. These models relate log-transformed blue-to-green reflectance ratios to in situ $Chl_a$, utilizing either direct band ratios (BR) or maximum band ratios (MBR)—the latter selecting the largest blue-to-green ratio for a given observation and applying a high-order polynomial fit. Their empirical simplicity and practical robustness made these polynomial regressions the operational foundation for chlorophyll products across successive satellite sensors (e.g., CZCS, SeaWiFS, MODIS, MERIS). They proved particularly effective in Case-1 waters, where phytoplankton dominate the optical signal.
+
+However, performance degrades in optically complex Case-2 waters, where non-phytoplankton components (e.g., suspended sediments, colored dissolved organic matter) disrupt the assumed reflectance-$Chl_a$ relationship. These models are also sensitive to atmospheric correction errors, especially in the blue spectral region. Yet, the OCx family represents a deterministic and frequentist modeling tradition, yielding single-point predictions with fixed coefficients and offering no formal quantification of parameter or predictive uncertainty.
+
+Subsequent refinements have addressed these limitations. For example, the Color Index (CI) method \citep{hu2012} employs a band-difference approach to reduce sensitivity to sensor noise and atmospheric residuals. Ongoing efforts have led to newer algorithm variants such as OC5 and OC6 \citep{oreilly2019}, which incorporate additional bands or modified ratio formulations to better capture variability across chlorophyll regimes.
+
+
+\subsection{Limitations of Existing Approaches}
+
+Regrettably, the development of traditional ocean color algorithms is grounded in a fundamental statistical error - one that pervades much of observational science: the conflation of sampling probability with inferential probability \citep{jaynes2003probability,descheemaekere2011}.
+
+Consider a data set $D$ composed of input-output pairs, for example remote sensing reflectance (Rrs) and chlorophyll-a concentration ($Chl_a$) - and a model $M$, representing the relationship between them. The sampling probability $p(D|M)$ denotes the probability of observing data $D$ under the assumption that model $M$ is true. Standard model fitting whatever the specific form, is akin to maximizing this likelihood by adjusting parameters of $M$ to best explain the observed data.
+
+This approach tacitly assumes that the model that best fits the training data also most accurately represents the underlying generative process. This constitutes an epistemic fallacy; treating the sampling probability $p(D|M)$ as though its conditionality was reversed; i.e., $p(M|D)$. Although in well-behaved data-rich cases, the maxima of $p(D|M)$ and $p(M|D)$ may coincide, this remains the exception—not the rule.
+
+This mistake lies at the heart of what \cite{clayton2022bernoulli} terms Bernoulli's Fallacy: the widespread misinterpretation of sampling probability as inference probability. As Clayton argues, this logical misstep has far-reaching consequences, with implications that extend beyond science to domains such as medicine, law, and public policy.
+
+This fallacy contributes to poor model generalization, drives the use of ad hoc, retrospective uncertainty quantification, and underlies many published results that later prove difficult to replicate \cite{baker2016, cobey2024biomedical}. These limitations are not restricted to classical hypothesis testing; they persist in the training and deployment of modern machine learning models as well.
+
+In regression and classification, maximizing likelihood is often treated as sufficient for inference—despite yielding only a single point estimate and ignoring both parameter uncertainty and the plausibility of alternative models.
+
+This epistemic shortcut has been directly critiqued in the machine learning literature. \cite{gal2016uncertainty} and \cite{ghahramani2015probabilistic} point out that most ML models discard uncertainty altogether, treating the outcome of an optimization as if it were an inference. The result is overconfident predictions and brittle generalization, in line with Clayton’s critique. \cite{bishop2006pattern} similarly distinguishes between the utility of predictive models and the inferential scaffolding required to quantify uncertainty, reinforcing the notion that likelihood alone is insufficient.
+
+
+\subsection{Overcoming limitations} 
+
+In oceanographic remote sensing, several recent efforts have attempted to address the limitations of classical models. For instance, \cite{seegers2018} proposed alternative evaluation metrics to move beyond restrictive frequentist assumptions. Others have introduced Bayesian elements into the modeling pipeline: \cite{frouin2013} applied Bayesian inversion for atmospheric correction, \cite{shi2015} used probabilistic fusion for multi-sensor data, and \cite{craig2019} employed Hamiltonian Monte Carlo to train Bayesian neural networks (BNNs) for retrieving inherent optical properties (IOPs) from top-of-atmosphere radiance. Similarly, \cite{werther2022} used Monte Carlo dropout to approximate Bayesian inference in IOP retrieval, while \cite{werther2025} benchmarked multiple probabilistic neural network architectures for quantifying aleatoric and epistemic uncertainty. \cite{erickson2023} recast the Generalized Inherent Optical Property (GIOP) framework using conjugate Bayesian linear models.
+
+These and other studies mark important progress. However, as \cite{werther2023} correctly argues, embracing uncertainty requires more than scatter plots with error bars. Despite growing interest in Bayesian tools for ocean color modeling, the full Bayesian workflow \citep{gelman2020bayesianworkflow, wolkovich2024fourstepbayesianworkflowimproving} remains underutilized. One exception is Craig and Karaköylü \citep{craig2019}, who explicitly define uncertainty in Bayesian terms—as distributions over unknowns—and construct models that natively express posterior uncertainty. Even there, however, evaluation still relies on frequentist metrics such as \(R^2\) and $MAE$. More commonly, probabilistic components are bolted onto otherwise frequentist pipelines, leaving the foundational definition of uncertainty untouched.
+
+In the ocean color community, uncertainty is most commonly defined following the GUM convention \citep{gum2008} as a parameter characterizing the dispersion of values that could reasonably be attributed to the measurand \citep{ioccg2020uncertainties}. This frequentist view emphasizes measurement variability, typically expressed through standard deviations or confidence intervals, based on assumptions about repeated sampling and error propagation.
+
+By contrast, in Bayesian inference all unknowns - such as model parameters - are assigned probability distributions that are updated through observed data. This view naturally encompasses both aleatoric and epistemic uncertainty, and it does not treat interval estimates as fixed or convention-bound. A Bayesian credible interval represents a direct probabilistic statement — e.g., “there is an 87\% probability that the true value lies in this interval, given the data and model” — and its width can be tailored to suit scientific or decision-making relevance.
+
+Bridging this gap requires more than Bayesian components; it requires Bayesian thinking. In what follows, I recast a foundational chlorophyll retrieval model as a fully Bayesian workflow, where uncertainty is not an afterthought but a central object of inference; an object that quantifies what the practitioner does not know about the underlying data-generating process.
+
+\section{Materials and Methods}
+
+\subsection{Dataset and Preprocessing}
+
+I used the familiar NASA Ocean Biology Processing Group's NOMAD dataset \citep{werdell2005improved}, which contains quality-controlled in situ chlorophyll-a measurements matched with satellite-derived remote sensing reflectance (Rrs) observations. The dataset spans a wide range of oceanographic conditions, enabling model development with potential for broad generalization.
+
+I retained visible Rrs bands from SeaWiFS (411, 443, 489, 510, 555, and 670 nm) and removed observations with invalid (null, zero, or negative) values. Chlorophyll-a concentrations measured using HPLC or fluorescence were $log_{10}$-transformed to stabilize variance.
+
+To construct the primary predictor, I computed the Maximum Band Ratio (MBR), similar to OC6 proposed by \cite{oreilly2019}, which uses all 6 available bands:
+
+$$
+MBR = \frac{\max(Rrs_{411}, Rrs_{443}, Rrs_{489}, Rrs_{510})}{Rrs_{555} + Rrs_{670}}
+$$
+
+I then log-transformed MBR and created a categorical grouping variable based on which numerator band was dominant for each observation. An additional binary flag distinguished chlorophyll measurement method (HPLC or fluorescence).
+
+\subsection{Modeling Approach}
+
+I developed a sequence of Bayesian regression models to estimate log-transformed chlorophyll-a from log-transformed MBR. Models were implemented using PyMC v5 \citep{abril2023pymc} and fitted via the No-U-Turn Sampler - NUTS, \citep{homan2014} - an adaptive variant of Hamiltonian Monte Carlo. I assessed convergence using Gelman-Rubin's $\hat{R}$ diagnostic, effective sample size (ESS), and visual trace plot inspection \cite{mcelreath2020}.
+$\hat{R}$ measures how well independent MCMC chains converge; a value of 1.00-1.01 is indicative of good convergence. ESS estimates how much independent information is available for each model parameter in potentially autocorrelated MCMC chains; ESS greater than 1000 suggests stable estimates. Both metrics are suggestive, and unmet criteria are not necessarily deal breakers but call for heightened vigilance.
+
+Once trained each model's predictive skill was evaluated using several approaches. The first uses Posterior Predictive Checks (PPC). Similar to prior predictive checks, this compares training data to trained model simulated output. 
+
+Models were then evaluated for generalization (how well they can predict on out-of-sample data) and uncertainty calibration (how realistic prediction uncertainties are). For this I used the Leave-One-Out cross validation (LOO) Probability Integral Transform (PIT); \textit{cf. e.g.} \cite{nguyen2025}. The Probability Integral Transform states that if a random variable $X$ has a continuous distribution with cumulative distribution function (CDF) $F_X$, then the random variable $Y = F_X(X)$ is uniformly distributed. This property is used in LOO-PIT to check if the model's predictions are well-calibrated. In LOO-PIT, the model is fit on all data except one observation, and the CDF of the posterior predictive distribution is used to compute the PIT for each observation. If the model is well-calibrated, the LOO-PIT values should be uniformly distributed. To reduce computational complexity, LOO does not require refitting the model for each data point. Instead, it uses a Pareto Smoothed Importance Sampling (PSIS) approximation, which re-weights draws from the full posterior to approximate leave-one-out posteriors in a stable and efficient manner \citep{vehtari2017}.
+The Leave-One-Out (LOO) Probability Integral Transform (PIT) is a method used in Bayesian statistics for model checking. It combines the concepts of Leave-One-Out Cross-Validation and Probability Integral Transform to assess the calibration of a model's predictions (see \citealt{karakoylublog} for a brief tutorial). The LOO-PIT method helps identify model misspecifications by comparing the distribution of LOO-PIT values to a uniform distribution. If the model is not well-calibrated, the LOO-PIT values will deviate from uniformity.
+
+PSIS-LOO also yields a scalar metric for model comparison: the expected log predictive density (ELPD, \citealt{vehtari2017}). This quantity summarizes how well a model is expected to predict new data. Models with higher ELPD values are preferred. In practice, I compared models by their ELPD and corresponding standard errors, and considered differences significant when the ELPD gap exceeded its uncertainty. In combination with the previously described analysis steps, this provides a robust, fully Bayesian approach to selecting among competing models.
+
+Finally, I computed predictive interval coverage: the proportion of observed values falling within the 94\% highest density intervals (HDI - the narrowest possible interval)  of the posterior predictive distribution. This was done for both in-sample  and out-of-sample datasets to assess generalization. A SeaBASS matchup dataset, containing 53 clean and complete observations after preprocessing, was used for out-of-sample-validation.
+
+
+\subsubsection{Model Progression}
+
+Modeling proceeded iteratively. Initial model performance and diagnostics motivated refinement of structure and assumptions to direct subsequent model development. Table ~\ref{tab:model-overview} summarizes the three main models discussed in the main text.
+
+\begin{table}[H]
+\centering
+\caption{Summary of model progression. Each model incrementally addresses limitations in structure or variance.}
+\label{tab:model-overview}
+\begin{tabular}{llp{7.5cm}}
+\toprule
+\textbf{Model} & \textbf{Type} & \textbf{Key Characteristics} \\
+\midrule
+Model 1 & Polynomial Regression & Bayesian re-framing of OCx (OC6-style), with a 4th-order polynomial on log(MBR) predicting log(Chl) \\
+Model 2 & Hierarchical Linear Regression & Partial pooling across MBR numerator groups, each with its own intercept and slope \\
+Model 5 & Heteroskedastic HLR & Extends Model 2 by modeling log($\sigma$) as a linear function of log(MBR), with group-specific parameters \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Model Structures and Priors}
+
+Model 1 uses a single-level polynomial structure with Gaussian priors on all regression coefficients and a Gamma prior on the shared dispersion parameter $\sigma$. Model 2 introduces a hierarchical structure with group-specific slopes and intercepts based on the dominant MBR numerator band. Unlike the 4th-order polynomial used in Model 1, this model uses a simple linear form and shares information across groups through partial pooling. This added structure is expected to capture spectral variability more effectively and yield improved calibration. Model 5 adds heteroskedasticity by modeling $log(\sigma_i)$ as a linear function of log(MBR), with group-specific slope and intercepts.
+
+
+
+All group-level parameters were given Normal priors centered at zero, and hyper-prior standard deviations followed Exponential(1) distributions to allow regularization via partial pooling. Prior predictive checks were performed for all models to ensure reasonable behavior before fitting.
+
+Figure ~\ref{fig:model1-struct} shows the structure of Model 1 as a directed acyclic graph (DAG). DAGs for Models 2 and 5 are provided in the Supplementary Material.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/model1_structure.pdf}
+\caption{Model 1 Directed Acyclic Graph (DAG). Gaussian priors are used for the intercept $\alpha$ and polynomial coefficients $\beta_1$--$\beta_4$. The dispersion parameter $\sigma$ has a Gamma prior. Observations are modeled via a truncated normal distribution.}
+\label{fig:model1-struct}
+\end{figure}
+
+
+\section{Results}
+
+\subsection{Model Performance Overview}
+
+Three models were fit to the data, each extending the previous in structural complexity. Model 1, a Bayesian analogue of OCx-style polynomial regression, served as a baseline. Model 2 introduced group-specific structure via hierarchical partial pooling by dominant MBR numerator band. Model 5 extended Model 2 by introducing heteroskedasticity, allowing the dispersion parameter to vary with log(MBR) across groups. 
+
+
+
+\subsection{Model Evaluation: Prior Predictive, Posterior Predictive, and LOO-PIT}
+
+Standard evaluation metrics such as $R^2$ or RMSE assess how closely point predictions match observed data. However, these are not appropriate for Bayesian models, which yield full posterior distributions rather than single-value estimates. In this context, predictive accuracy must be judged not only by central tendency but also by how well the model represents uncertainty.
+
+To that end, I evaluate each model using prior and posterior predictive checks and LOO-PIT diagnostics, which respectively assess in-sample fit and out-of-sample calibration. These diagnostics are presented below for Models 1, 2, and 5, beginning with Model 1.
+
+\subsubsection{Model 1: Polynomial Regression}
+
+The top two panels in Figure~\ref{fig:model1-eval} display kernel density estimates (KDEs) comparing simulated and observed distributions of log-transformed chlorophyll-a. KDEs provide smooth, non-parametric estimates of probability density and are used here to visually assess how well the model captures the shape of the data-generating process.
+
+The top-left panel shows the prior predictive distribution. Simulated draws from the model under the prior (gray lines) span a wide range of values, as expected given the weakly informative priors. The mean of these simulations (orange dashed line) is diffuse and relatively flat, indicating that the prior allows the model to generate a wide range of plausible outcomes. The observed data KDE (black line) does not influence the prior predictive draws, as the model has not yet been trained on the data; it is included here solely to facilitate comparison with the posterior predictive check in the top-right panel.
+
+The top-right panel compares the posterior predictive distribution to the same observed KDE. The black line represents the empirical distribution of the data, estimated from the NOMAD dataset. It is unimodal, with a dominant peak near log(Chl) = 0 (i.e., 1 mg~m$^{-3}$), typical of mesotrophic or moderately productive coastal waters. A secondary shoulder appears near log(Chl) $\approx$ -0.5, corresponding to lower chlorophyll concentrations (0.3 mg~m$^{-3}$ and below) associated with oligotrophic oceanic regions. This structure indicates that the dataset includes a range of ecological regimes, with a skew toward oceanic conditions.
+
+Posterior predictive draws (gray lines) cluster tightly around the observed KDE and differ markedly from the diffuse prior predictive draws, suggesting that the model has learned meaningfully from the data. The posterior predictive mean (orange dashed line) successfully captures the overall support and central tendency of the observed distribution. However, it underestimates the height of the primary mode, producing a smoother, more flattened density. This suggests that while the model has fit the broad structure of the data, it fails to fully represent the concentrated central mass, indicating a tendency toward overdispersed predictions.
+
+The bottom two panels assess model calibration using leave-one-out probability integral transform (LOO-PIT) diagnostics. Two complementary views are shown: the left panel presents the density of LOO-PIT values via a kernel density estimate (KDE), while the right panel shows the cumulative deviation of those values from the ideal uniform distribution. The KDE is sensitive to local concentration of probability mass—such as over- or underdispersion—while the ECDF-minus-uniform plot emphasizes systematic calibration drift across the distribution. Together, they provide a more complete picture of model uncertainty than either view alone.
+
+In a well-calibrated model, PIT values—computed by evaluating the posterior predictive cumulative distribution function at each held-out observation—should follow a uniform distribution. The KDE panel (bottom-left) shows the LOO-PIT density (black line) compared against 500 KDEs of values drawn from a uniform distribution (thin blue lines). A horizontal dashed line at $y = 1$ denotes the target density for a calibrated model. The observed KDE exhibits a distinct U-shape, with density elevated in the tails and suppressed in the center, indicating that the model is \textbf{underconfident}, or equivalently, \textbf{overdispersed}—its predictive intervals are too wide and assign insufficient mass near the typical observations.
+
+The bottom-right panel shows the difference between the empirical cumulative distribution function (ECDF) of the LOO-PIT values and the ideal uniform ECDF. A horizontal dashed line at $y = 0$ represents the calibration target. The shaded band shows a 94\% credible interval for this difference under ideal conditions, based on repeated uniform draws. The curve for Model 1 deviates below the reference line in the central quantiles and rises above it in the tails, confirming the pattern seen in the KDE panel. Together, these diagnostics show that while Model 1 captures the central trend of the data, its posterior predictive distributions are too diffuse.
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\textwidth]{figures/model1_evaluation.pdf}
+\caption{Model 1: Top row shows prior and posterior predictive distributions. Bottom row shows model calibration assessed using LOO-PIT plots. Left panel shows the kernel density estimate (KDE) of the LOO-PIT values. For a well-calibrated model, the distribution should be approximately flat, indicating that observed outcomes are consistent with the posterior predictive distributions. Deviations from flatness, such as peaks or dips, reflect under- or overconfidence in different parts of the predictive distribution. The right panel shows the difference between the empirical cumulative distribution function (ECDF) of the LOO-PIT values and the ideal uniform CDF }
+\label{fig:model1-eval}
+\end{figure}
+
+\subsubsection{Model 2: Hierarchical Linear Regression}
+
+Figure~\ref{fig:model2-eval} shows the model evaluation panels for Model 2. The prior predictive simulations (top-left) are broader than in Model 1, reflecting the additional flexibility introduced by the hierarchical structure. The prior predictive mean (orange dashed) is flat and diffuse, suggesting weakly informative priors that allow a wide range of generative behaviors.
+
+The posterior predictive check (top-right) shows a notable improvement over Model 1. Posterior draws cluster tightly around the observed KDE, especially near the primary mode. This reflects the effect of partial pooling across MBR groups, which concentrates predictions around dominant patterns in the data. However, the model fails to fully capture the secondary shoulder near $\text{log(Chl)} \approx -0.5$, suggesting that some variation remains unaccounted for — possibly due to shrinkage of uncertainty toward the group mean.
+
+The LOO-PIT panels are interpreted using the same diagnostic framework described for Model 1. The KDE reveals local deviations from calibration, while the ECDF-minus-uniform plot captures cumulative miscalibration trends. Here, the LOO-PIT diagnostics (bottom row) further support the improved performance. The KDE panel (bottom-left) shows smaller deviations from the uniform reference (dashed line at $y = 1$) compared to Model 1. The y-axis range here is narrower—approximately 0.5 to 1.3—indicating that the magnitude of miscalibration is significantly reduced. Similarly, the ECDF-minus-uniform plot (bottom-right) shows deviations that remain well within the 94\% credible interval, with a y-axis span of just ±0.025. These compressed ranges reflect a more calibrated model. Mild signs of overdispersion persist—visible as a small negative dip in the central quantiles—but overall, Model 2 represents a substantial improvement in both fit and uncertainty calibration relative to the baseline.
+
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\textwidth]{figures/model2_evaluation.pdf}
+\caption{Model 2: Prior/posterior predictive checks (top), LOO-PIT diagnostics (bottom).}
+\label{fig:model2-eval}
+\end{figure}
+
+\subsubsection{Model 5: Heteroskedastic Hierarchical Linear Regression}
+
+Model 5 extends the hierarchical structure of Model 2 by allowing the likelihood variance $\sigma$ to vary linearly with log(MBR), using group-specific intercepts and slopes. This accommodates heteroskedasticity across spectral groups and better reflects the variance structure of the data. By explicitly modeling the dispersion, the model is expected to improve both fit and calibration, particularly in the tails of the predictive distribution.
+
+Figure~\ref{fig:model5-eval} presents the four-panel evaluation for Model 5. The prior predictive simulations (top-left) are the most diffuse of any model—expected, given the added flexibility in both the mean and variance components. The prior predictive mean (orange dashed line) is nearly flat. As before, the observed KDE (black line) is included only for visual comparison. The posterior predictive check (top-right) shows excellent agreement between the posterior draws and the observed KDE. The model captures both the main mode near $\text{log(Chl)} = 0$ and the secondary shoulder near -0.5—something neither Model 1 nor 2 accomplished. The predictive mean aligns closely with the observed distribution, and the vertical spread among draws reflects uncertainty in both the mean and variance terms.
+
+The LOO-PIT panels are interpreted using the same diagnostic framework described for Model 1. The KDE panel (bottom-left) shows a nearly flat density centered around the ideal reference line at $ y = 1$ , with minor undulations well within the light blue band representing draws from the uniform distribution. The vertical range is now the tightest of all three models—approximately 0.8 to 1.2—indicating minimal deviation from ideal calibration. The ECDF-minus-uniform plot (bottom-right) shows similarly tight behavior. The LOO-PIT curve remains entirely within the 94\% credible interval and deviates by no more than ±0.02 from the reference line at $ y = 0 $. Together, these diagnostics suggest that Model 5 is both well-calibrated and well-aligned with the observed data, representing the most accurate and epistemically sound predictive model of the three.
+
+
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\textwidth]{figures/model5_evaluation.pdf}
+\caption{Model 5: Prior/posterior predictive checks (top), LOO-PIT diagnostics (bottom).}
+\label{fig:model5-eval}
+\end{figure}
+
+\subsection{Predictive Coverage}
+
+For each model, I computed the proportion of observed values falling within the 94\% highest density intervals (HDIs) of the posterior predictive distribution. Coverage was assessed separately for in-sample (NOMAD) and out-of-sample (SeaBASS) datasets.
+
+\subsubsection{Model 1}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/model1_predictive_coverage.pdf}
+\caption{Model 1: Predictive coverage plots. Left: in-sample (NOMAD). Right: out-of-sample (SeaBASS).}
+\label{fig:model1-coverage}
+\end{figure}
+
+\subsubsection{Model 2}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/model2_predictive_coverage.pdf}
+\caption{Model 2: Predictive coverage plots. Left: in-sample. Right: out-of-sample.}
+\label{fig:model2-coverage}
+\end{figure}
+
+\subsubsection{Model 5}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/model5_predictive_coverage.pdf}
+\caption{Model 5: Predictive coverage plots. Left: in-sample. Right: out-of-sample.}
+\label{fig:model5-coverage}
+\end{figure}
+
+Overall, each increase in model complexity yielded improvements in calibration and generalizability, as indicated by posterior predictive checks, leave-one-out probability integral transform (LOO-PIT) diagnostics, and predictive interval coverage. Model 5 exhibited the best out-of-sample calibration and predictive accuracy. 
+
+\subsection{Model Comparison}
+
+See Table~\ref{tab:model-comparison} for ELPD-based comparison and Figure~\ref{fig:model-comparison-plot} for a visual summary.
+
+
+\begin{table}[H]
+\centering
+\caption{Model comparison using PSIS-LOO. Higher ELPD indicates better expected out-of-sample predictive performance. $\Delta$ELPD shows differences relative to best model. $p_{\text{loo}}$ is the effective number of parameters.}
+\label{tab:model-comparison}
+\begin{tabular}{lrrr}
+\toprule
+Model & ELPD & $\Delta$ELPD & $p_{\text{loo}}$ \\
+\midrule
+Model 5 & -- & -- & -- \\
+Model 2 & -- & -- & -- \\
+Model 1 & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/elpd_comparison_plot.pdf}
+\caption{Model comparison plot showing $\Delta$ELPD and $p_{\text{loo}}$ across models.}
+\label{fig:model-comparison-plot}
+\end{figure}
+
+
+\section{Discussion}
+The posterior predictive distribution is an information-rich construct that reflects both model structure and epistemic (and aleatoric) uncertainty. Rather than measuring residual error around means, I evaluate models based on their ability to generate data consistent with observations, and on how well-calibrated their uncertainty estimates are. This is done through prior and posterior predictive checks for in-sample fit, and LOO-PIT diagnostics for out-of-sample calibration. These tools provide a more appropriate basis for evaluating Bayesian models than traditional metrics designed for frequentist or deterministic frameworks.
+
+\section*{Declaration of Generative AI and AI-Assisted Technologies in the Writing Process}
+During the preparation of this work, the author used ChatGPT to help polish the language of the Methods and Results sections. After using this tool, the authors reviewed and edited the content as needed and assume full responsibility for the content of the publication.
+
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{references}  % Create refs.bib file or replace with manual entries
+
+\end{document}
